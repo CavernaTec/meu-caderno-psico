@@ -2,11 +2,13 @@ import { useState } from 'react';
 import PTITab from './tabs/PTITab';
 import EvolutionTab from './tabs/EvolutionTab';
 import ABCTab from './tabs/ABCTab';
+import MediaTab from './tabs/MediaTab';
 
 const tabs = [
   { id: 'pti', label: 'PTI' },
   { id: 'evolucao', label: 'Evolução' },
   { id: 'abc', label: 'Comportamento' },
+  { id: 'media', label: 'Mídia' },
 ];
 
 export default function PatientTabs({ patientId }: { patientId: string }) {
@@ -14,7 +16,6 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
 
   return (
     <div className="animate-slide-up">
-      {/* Tab Bar */}
       <div className="flex gap-1 bg-muted p-1 rounded-xl mb-6">
         {tabs.map(tab => (
           <button
@@ -31,10 +32,10 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
         ))}
       </div>
 
-      {/* Tab Content */}
       {active === 'pti' && <PTITab patientId={patientId} />}
       {active === 'evolucao' && <EvolutionTab patientId={patientId} />}
       {active === 'abc' && <ABCTab patientId={patientId} />}
+      {active === 'media' && <MediaTab patientId={patientId} />}
     </div>
   );
 }

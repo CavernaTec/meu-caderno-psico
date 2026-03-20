@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, BookOpen } from 'lucide-react';
-import { getNotes, saveNote, formatDate, type EvolutionNote } from '@/lib/data';
+import { Plus, BookOpen, Trash2 } from 'lucide-react';
+import { getNotes, saveNote, deleteNote, formatDate, type EvolutionNote } from '@/lib/data';
 import { toast } from 'sonner';
 
 export default function EvolutionTab({ patientId }: { patientId: string }) {
@@ -8,17 +8,26 @@ export default function EvolutionTab({ patientId }: { patientId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [content, setContent] = useState('');
 
-  useEffect(() => {
+  function reload() {
     setNotes(getNotes(patientId).sort((a, b) => b.date.localeCompare(a.date)));
-  }, [patientId]);
+  }
+
+  useEffect(() => { reload(); }, [patientId]);
 
   function handleAdd() {
     if (!content.trim()) return;
     saveNote({ patientId, date: new Date().toISOString().split('T')[0], content });
-    setNotes(getNotes(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+    reload();
     setContent('');
     setShowForm(false);
     toast.success('Nota de evolução salva!');
+  }
+
+  function handleDelete(id: string) {
+    if (!confirm('Remover esta nota?')) return;
+    deleteNote(id);
+    reload();
+    toast.success('Nota removida.');
   }
 
   return (
@@ -52,7 +61,6 @@ export default function EvolutionTab({ patientId }: { patientId: string }) {
         </div>
       )}
 
-      {/* Timeline */}
       <div className="relative">
         {notes.length > 1 && (
           <div className="absolute left-[19px] top-6 bottom-6 w-0.5 bg-border" />
@@ -63,7 +71,12 @@ export default function EvolutionTab({ patientId }: { patientId: string }) {
               <BookOpen size={16} className="text-accent-foreground" />
             </div>
             <div className="flex-1 bg-card border rounded-xl p-4">
-              <p className="text-xs font-semibold text-muted-foreground mb-1.5">{formatDate(note.date)}</p>
+              <div className="flex items-start justify-between">
+                <p className="text-xs font-semibold text-muted-foreground mb-1.5">{formatDate(note.date)}</p>
+                <button onClick={() => handleDelete(note.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
+                  <Trash2 size={14} />
+                </button>
+              </div>
               <p className="text-sm text-foreground leading-relaxed">{note.content}</p>
             </div>
           </div>

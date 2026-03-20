@@ -42,6 +42,15 @@ export interface ABCRecord {
   consequence: string;
 }
 
+export interface MediaItem {
+  id: string;
+  patientId: string;
+  date: string;
+  name: string;
+  type: string;
+  dataUrl: string;
+}
+
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
@@ -52,6 +61,7 @@ const STORAGE_KEYS = {
   goals: 'ep_goals',
   notes: 'ep_notes',
   abc: 'ep_abc',
+  media: 'ep_media',
 };
 
 function load<T>(key: string): T[] {
@@ -88,6 +98,16 @@ export function updatePatient(id: string, data: Partial<Patient>) {
   save(STORAGE_KEYS.patients, patients);
 }
 
+export function deletePatient(id: string) {
+  save(STORAGE_KEYS.patients, getPatients().filter(p => p.id !== id));
+  // Also delete related data
+  save(STORAGE_KEYS.sessions, load<Session>(STORAGE_KEYS.sessions).filter(s => s.patientId !== id));
+  save(STORAGE_KEYS.goals, load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.patientId !== id));
+  save(STORAGE_KEYS.notes, load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.patientId !== id));
+  save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.patientId !== id));
+  save(STORAGE_KEYS.media, load<MediaItem>(STORAGE_KEYS.media).filter(m => m.patientId !== id));
+}
+
 // Sessions
 export function getSessions(): Session[] {
   return load<Session>(STORAGE_KEYS.sessions);
@@ -111,6 +131,10 @@ export function updateSession(id: string, data: Partial<Session>) {
   save(STORAGE_KEYS.sessions, sessions);
 }
 
+export function deleteSession(id: string) {
+  save(STORAGE_KEYS.sessions, getSessions().filter(s => s.id !== id));
+}
+
 // PTI Goals
 export function getGoals(patientId: string): PTIGoal[] {
   return load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.patientId === patientId);
@@ -129,6 +153,10 @@ export function updateGoal(id: string, data: Partial<PTIGoal>) {
   save(STORAGE_KEYS.goals, goals);
 }
 
+export function deleteGoal(id: string) {
+  save(STORAGE_KEYS.goals, load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.id !== id));
+}
+
 // Evolution Notes
 export function getNotes(patientId: string): EvolutionNote[] {
   return load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.patientId === patientId);
@@ -142,6 +170,10 @@ export function saveNote(note: Omit<EvolutionNote, 'id'>): EvolutionNote {
   return newNote;
 }
 
+export function deleteNote(id: string) {
+  save(STORAGE_KEYS.notes, load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.id !== id));
+}
+
 // ABC Records
 export function getABCRecords(patientId: string): ABCRecord[] {
   return load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.patientId === patientId);
@@ -153,6 +185,27 @@ export function saveABCRecord(record: Omit<ABCRecord, 'id'>): ABCRecord {
   records.push(newRecord);
   save(STORAGE_KEYS.abc, records);
   return newRecord;
+}
+
+export function deleteABCRecord(id: string) {
+  save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.id !== id));
+}
+
+// Media
+export function getMedia(patientId: string): MediaItem[] {
+  return load<MediaItem>(STORAGE_KEYS.media).filter(m => m.patientId === patientId);
+}
+
+export function saveMedia(item: Omit<MediaItem, 'id'>): MediaItem {
+  const items = load<MediaItem>(STORAGE_KEYS.media);
+  const newItem: MediaItem = { ...item, id: generateId() };
+  items.push(newItem);
+  save(STORAGE_KEYS.media, items);
+  return newItem;
+}
+
+export function deleteMedia(id: string) {
+  save(STORAGE_KEYS.media, load<MediaItem>(STORAGE_KEYS.media).filter(m => m.id !== id));
 }
 
 // Seed demo data

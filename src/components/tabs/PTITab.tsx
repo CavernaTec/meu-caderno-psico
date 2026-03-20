@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Plus, Target } from 'lucide-react';
-import { getGoals, saveGoal, updateGoal, getStatusLabel, getStatusColor, type PTIGoal } from '@/lib/data';
+import { Plus, Target, Trash2 } from 'lucide-react';
+import { getGoals, saveGoal, updateGoal, deleteGoal, getStatusLabel, getStatusColor, type PTIGoal } from '@/lib/data';
 import { toast } from 'sonner';
 
 const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental'];
@@ -30,6 +30,13 @@ export default function PTITab({ patientId }: { patientId: string }) {
     const progress = nextStatus === 'completed' ? 100 : nextStatus === 'in_progress' ? 50 : 0;
     updateGoal(goal.id, { status: nextStatus, progress });
     setGoals(getGoals(patientId));
+  }
+
+  function handleDelete(id: string) {
+    if (!confirm('Remover esta meta?')) return;
+    deleteGoal(id);
+    setGoals(getGoals(patientId));
+    toast.success('Meta removida.');
   }
 
   return (
@@ -72,23 +79,25 @@ export default function PTITab({ patientId }: { patientId: string }) {
       {goals.map(goal => (
         <div key={goal.id} className="bg-card border rounded-xl p-4">
           <div className="flex items-start justify-between mb-2">
-            <div>
+            <div className="flex-1">
               <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{goal.area}</span>
               <p className="text-sm text-foreground mt-1.5 font-medium">{goal.description}</p>
             </div>
-            <button
-              onClick={() => cycleStatus(goal)}
-              className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors active:scale-95 ${getStatusColor(goal.status)}`}
-            >
-              {getStatusLabel(goal.status)}
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => cycleStatus(goal)}
+                className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors active:scale-95 ${getStatusColor(goal.status)}`}
+              >
+                {getStatusLabel(goal.status)}
+              </button>
+              <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
-          {/* Progress bar */}
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                goal.status === 'completed' ? 'bg-success' : 'bg-primary'
-              }`}
+              className={`h-full rounded-full transition-all duration-500 ${goal.status === 'completed' ? 'bg-success' : 'bg-primary'}`}
               style={{ width: `${goal.progress}%` }}
             />
           </div>
