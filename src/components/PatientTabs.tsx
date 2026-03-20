@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import SessionsTab from './tabs/SessionsTab';
 import PTITab from './tabs/PTITab';
 import EvolutionTab from './tabs/EvolutionTab';
 import ABCTab from './tabs/ABCTab';
 import MediaTab from './tabs/MediaTab';
 
 const tabs = [
+  { id: 'sessoes', label: 'Sessões' },
   { id: 'pti', label: 'PTI' },
   { id: 'evolucao', label: 'Evolução' },
-  { id: 'abc', label: 'Comportamento' },
+  { id: 'abc', label: 'ABC' },
   { id: 'media', label: 'Mídia' },
 ];
 
