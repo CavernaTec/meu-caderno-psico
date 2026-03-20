@@ -37,6 +37,7 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
       </div>
 
       {active === 'sessoes' && <SessionsTab patientId={patientId} />}
+      {active === 'avaliacoes' && <AssessmentsTab patientId={patientId} />}
       {active === 'pti' && <PTITab patientId={patientId} />}
       {active === 'evolucao' && <EvolutionTab patientId={patientId} />}
       {active === 'abc' && <ABCTab patientId={patientId} />}
