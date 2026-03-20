@@ -4,9 +4,11 @@ import PTITab from './tabs/PTITab';
 import EvolutionTab from './tabs/EvolutionTab';
 import ABCTab from './tabs/ABCTab';
 import MediaTab from './tabs/MediaTab';
+import AssessmentsTab from './tabs/AssessmentsTab';
 
 const tabs = [
   { id: 'sessoes', label: 'Sessões' },
+  { id: 'avaliacoes', label: 'Avaliações' },
   { id: 'pti', label: 'PTI' },
   { id: 'evolucao', label: 'Evolução' },
   { id: 'abc', label: 'ABC' },
@@ -35,6 +37,7 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
       </div>
 
       {active === 'sessoes' && <SessionsTab patientId={patientId} />}
+      {active === 'avaliacoes' && <AssessmentsTab patientId={patientId} />}
       {active === 'pti' && <PTITab patientId={patientId} />}
       {active === 'evolucao' && <EvolutionTab patientId={patientId} />}
       {active === 'abc' && <ABCTab patientId={patientId} />}

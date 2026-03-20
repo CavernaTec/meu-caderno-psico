@@ -44,6 +44,96 @@ export interface ABCRecord {
   consequence: string;
 }
 
+export type IARStatus = 'desenvolvido' | 'em_desenvolvimento' | 'dificuldade' | '';
+
+export interface IARData {
+  esquemaCorporal: IARStatus;
+  lateralidade: IARStatus;
+  orientacaoEspacialTemporal: IARStatus;
+  discriminacaoVisualAuditiva: IARStatus;
+  coordenacaoVisomotora: IARStatus;
+  memoria: IARStatus;
+}
+
+export interface InstrumentRecord {
+  applied: boolean;
+  result: string;
+}
+
+export interface InstrumentsData {
+  eoca: InstrumentRecord;
+  provasOperatorias: InstrumentRecord;
+  tecnicasProjetivas: InstrumentRecord;
+  anamnese: InstrumentRecord;
+  cars2: InstrumentRecord;
+  mchatR: InstrumentRecord;
+  proteaR: InstrumentRecord;
+}
+
+export type WritingLevel = 'pre_silabico' | 'silabico' | 'silabico_alfabetico' | 'alfabetico' | '';
+
+export interface ProbesData {
+  writingLevel: WritingLevel;
+  mathNotes: string;
+  psychomotorNotes: string;
+}
+
+export interface AssessmentData {
+  iar: IARData;
+  instruments: InstrumentsData;
+  probes: ProbesData;
+  diagnosticHypothesis: string;
+}
+
+const EMPTY_INSTRUMENT: InstrumentRecord = { applied: false, result: '' };
+
+export function getDefaultAssessment(): AssessmentData {
+  return {
+    iar: {
+      esquemaCorporal: '',
+      lateralidade: '',
+      orientacaoEspacialTemporal: '',
+      discriminacaoVisualAuditiva: '',
+      coordenacaoVisomotora: '',
+      memoria: '',
+    },
+    instruments: {
+      eoca: { ...EMPTY_INSTRUMENT },
+      provasOperatorias: { ...EMPTY_INSTRUMENT },
+      tecnicasProjetivas: { ...EMPTY_INSTRUMENT },
+      anamnese: { ...EMPTY_INSTRUMENT },
+      cars2: { ...EMPTY_INSTRUMENT },
+      mchatR: { ...EMPTY_INSTRUMENT },
+      proteaR: { ...EMPTY_INSTRUMENT },
+    },
+    probes: { writingLevel: '', mathNotes: '', psychomotorNotes: '' },
+    diagnosticHypothesis: '',
+  };
+}
+
+const ASSESSMENT_KEY = 'ep_assessments';
+
+export function getAssessment(patientId: string): AssessmentData {
+  try {
+    const all = JSON.parse(localStorage.getItem(ASSESSMENT_KEY) || '{}');
+    return all[patientId] || getDefaultAssessment();
+  } catch {
+    return getDefaultAssessment();
+  }
+}
+
+export function saveAssessment(patientId: string, data: AssessmentData) {
+  try {
+    const all = JSON.parse(localStorage.getItem(ASSESSMENT_KEY) || '{}');
+    all[patientId] = data;
+    localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(all));
+  } catch {
+    const obj: Record<string, AssessmentData> = {};
+    obj[patientId] = data;
+    localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(obj));
+  }
+}
+
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }

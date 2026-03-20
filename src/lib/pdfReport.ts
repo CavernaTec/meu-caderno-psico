@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getPatient, getNotes, getGoals, getABCRecords, getSessions, calculateAge, formatDate, getStatusLabel } from './data';
+import { getPatient, getNotes, getGoals, getABCRecords, getSessions, getAssessment, calculateAge, formatDate, getStatusLabel } from './data';
 import { getAllMedia } from './mediaStore';
 
 export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string): Promise<boolean> {
@@ -54,6 +54,115 @@ export async function generatePatientReport(patientId: string, startDate?: strin
     doc.text(periodText, 14, y);
     y += 8;
     doc.setFont('helvetica', 'normal');
+  }
+
+  // Assessment Data
+  const assessment = getAssessment(patientId);
+  const iarLabels: Record<string, string> = {
+    esquemaCorporal: 'Esquema Corporal',
+    lateralidade: 'Lateralidade',
+    orientacaoEspacialTemporal: 'Orientação Espacial/Temporal',
+    discriminacaoVisualAuditiva: 'Discriminação Visual/Auditiva',
+    coordenacaoVisomotora: 'Coordenação Visomotora',
+    memoria: 'Memória',
+  };
+  const iarStatusLabels: Record<string, string> = {
+    desenvolvido: 'Desenvolvido',
+    em_desenvolvimento: 'Em Desenvolvimento',
+    dificuldade: 'Dificuldade',
+  };
+  const hasIAR = Object.values(assessment.iar).some(v => v !== '');
+  const hasInstruments = Object.values(assessment.instruments).some(v => v.applied);
+  const hasProbes = assessment.probes.writingLevel || assessment.probes.mathNotes || assessment.probes.psychomotorNotes;
+  const hasDiagnosis = assessment.diagnosticHypothesis.trim();
+
+  if (hasIAR || hasInstruments || hasProbes || hasDiagnosis) {
+    y += 4;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Resultados da Avaliação e Sondagens', 14, y);
+    y += 4;
+
+    if (hasIAR) {
+      const iarRows = Object.entries(assessment.iar)
+        .filter(([, v]) => v !== '')
+        .map(([k, v]) => [iarLabels[k] || k, iarStatusLabels[v] || v]);
+      if (iarRows.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Área (IAR)', 'Status']],
+          body: iarRows,
+          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 14, right: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 8;
+      }
+    }
+
+    if (hasInstruments) {
+      const instrumentLabels: Record<string, string> = {
+        eoca: 'EOCA', provasOperatorias: 'Provas Operatórias', tecnicasProjetivas: 'Técnicas Projetivas',
+        anamnese: 'Anamnese', cars2: 'CARS-2', mchatR: 'M-CHAT-R', proteaR: 'PROTEA-R',
+      };
+      const instRows = Object.entries(assessment.instruments)
+        .filter(([, v]) => v.applied)
+        .map(([k, v]) => [instrumentLabels[k] || k, v.result || '—']);
+      if (instRows.length > 0) {
+        if (y > 240) { doc.addPage(); y = 20; }
+        autoTable(doc, {
+          startY: y,
+          head: [['Instrumento / Teste', 'Resultado']],
+          body: instRows,
+          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 14, right: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 8;
+      }
+    }
+
+    if (hasProbes) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Sondagens Pedagógicas', 14, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const writingLabels: Record<string, string> = {
+        pre_silabico: 'Pré-silábico', silabico: 'Silábico',
+        silabico_alfabetico: 'Silábico-Alfabético', alfabetico: 'Alfabético',
+      };
+      if (assessment.probes.writingLevel) {
+        doc.text(`Escrita: ${writingLabels[assessment.probes.writingLevel] || assessment.probes.writingLevel}`, 14, y);
+        y += 6;
+      }
+      if (assessment.probes.mathNotes) {
+        doc.text('Matemática:', 14, y); y += 5;
+        const ml = doc.splitTextToSize(assessment.probes.mathNotes, pageWidth - 28);
+        doc.text(ml, 14, y); y += ml.length * 5 + 4;
+      }
+      if (assessment.probes.psychomotorNotes) {
+        doc.text('Psicomotora:', 14, y); y += 5;
+        const pl = doc.splitTextToSize(assessment.probes.psychomotorNotes, pageWidth - 28);
+        doc.text(pl, 14, y); y += pl.length * 5 + 4;
+      }
+    }
+
+    if (hasDiagnosis) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Hipótese Diagnóstica', 14, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      const dl = doc.splitTextToSize(assessment.diagnosticHypothesis, pageWidth - 28);
+      doc.text(dl, 14, y); y += dl.length * 5 + 6;
+    }
   }
 
   // Sessions
