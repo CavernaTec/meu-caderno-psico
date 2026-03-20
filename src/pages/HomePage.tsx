@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Play, Clock, CheckCircle2 } from 'lucide-react';
-import { getTodaySessions, getPatient, seedDemoData, type Session, type Patient, updateSession } from '@/lib/data';
+import { getTodaySessions, getPatient, type Session, type Patient, updateSession } from '@/lib/data';
 
 function getGreeting(): string {
   const h = new Date().getHours();
