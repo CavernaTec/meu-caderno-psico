@@ -14,7 +14,7 @@ const tabs = [
 ];
 
 export default function PatientTabs({ patientId }: { patientId: string }) {
-  const [active, setActive] = useState('pti');
+  const [active, setActive] = useState('sessoes');
 
   return (
     <div className="animate-slide-up">
