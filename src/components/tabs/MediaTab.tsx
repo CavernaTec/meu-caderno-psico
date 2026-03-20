@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Plus, Image, Trash2, X } from 'lucide-react';
-import { getMedia, saveMedia, deleteMedia, formatDate, type MediaItem } from '@/lib/data';
+import { formatDate } from '@/lib/data';
+import { getAllMedia, saveMediaItem, deleteMediaItem, type MediaItem } from '@/lib/mediaStore';
 import { toast } from 'sonner';
 
 export default function MediaTab({ patientId }: { patientId: string }) {
@@ -9,8 +10,13 @@ export default function MediaTab({ patientId }: { patientId: string }) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setItems(getMedia(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+    loadMedia();
   }, [patientId]);
+
+  async function loadMedia() {
+    const media = await getAllMedia(patientId);
+    setItems(media.sort((a, b) => b.date.localeCompare(a.date)));
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -22,16 +28,16 @@ export default function MediaTab({ patientId }: { patientId: string }) {
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         const dataUrl = reader.result as string;
-        saveMedia({
+        await saveMediaItem({
           patientId,
           date: new Date().toISOString().split('T')[0],
           name: file.name,
           type: file.type,
           dataUrl,
         });
-        setItems(getMedia(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+        await loadMedia();
         toast.success(`${file.name} adicionado!`);
       };
       reader.readAsDataURL(file);
@@ -40,10 +46,10 @@ export default function MediaTab({ patientId }: { patientId: string }) {
     e.target.value = '';
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Remover esta mídia?')) return;
-    deleteMedia(id);
-    setItems(getMedia(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+    await deleteMediaItem(id);
+    await loadMedia();
     toast.success('Mídia removida.');
   }
 
@@ -97,7 +103,6 @@ export default function MediaTab({ patientId }: { patientId: string }) {
         ))}
       </div>
 
-      {/* Preview Modal */}
       {preview && (
         <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setPreview(null)}>
           <button className="absolute top-4 right-4 text-white" onClick={() => setPreview(null)}>

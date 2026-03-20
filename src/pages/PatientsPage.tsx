@@ -8,7 +8,6 @@ export default function PatientsPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    seedDemoData();
     setPatients(getPatients());
   }, []);
 

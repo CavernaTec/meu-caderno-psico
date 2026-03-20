@@ -15,7 +15,6 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    seedDemoData();
     loadSessions();
   }, []);
 
