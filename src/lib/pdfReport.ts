@@ -56,8 +56,45 @@ export async function generatePatientReport(patientId: string, startDate?: strin
     doc.setFont('helvetica', 'normal');
   }
 
-  // PTI Goals
+  // Sessions
   y += 4;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Histórico de Sessões', 14, y);
+  y += 4;
+
+  let sessions = getSessions()
+    .filter(s => s.patientId === patientId)
+    .sort((a, b) => a.date.localeCompare(b.date));
+  if (startDate) sessions = sessions.filter(s => s.date >= startDate);
+  if (endDate) sessions = sessions.filter(s => s.date <= endDate);
+
+  if (sessions.length > 0) {
+    autoTable(doc, {
+      startY: y,
+      head: [['Data', 'Horário', 'Status', 'Observações']],
+      body: sessions.map(s => [
+        formatDate(s.date),
+        s.time,
+        s.completed ? 'Concluída' : 'Agendada',
+        s.notes || '—',
+      ]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 10;
+  } else {
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nenhuma sessão registrada no período.', 14, y);
+    y += 10;
+  }
+
+  // PTI Goals
+  if (y > 240) { doc.addPage(); y = 20; }
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('Plano Terapêutico Individual (PTI)', 14, y);
