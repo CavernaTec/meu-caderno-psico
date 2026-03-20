@@ -1,3 +1,5 @@
+import { deleteAllPatientMedia } from './mediaStore';
+
 export interface Patient {
   id: string;
   name: string;
