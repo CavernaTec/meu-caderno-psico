@@ -1,14 +1,9 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import { getPatient, getNotes, getGoals, getABCRecords, getMedia, calculateAge, formatDate, getStatusLabel, type Patient } from './data';
+import autoTable from 'jspdf-autotable';
+import { getPatient, getNotes, getGoals, getABCRecords, calculateAge, formatDate, getStatusLabel } from './data';
+import { getAllMedia } from './mediaStore';
 
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: Record<string, unknown>) => jsPDF;
-  }
-}
-
-export function generatePatientReport(patientId: string, startDate?: string, endDate?: string): boolean {
+export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string): Promise<boolean> {
   const patient = getPatient(patientId);
   if (!patient) return false;
 
@@ -70,7 +65,7 @@ export function generatePatientReport(patientId: string, startDate?: string, end
 
   const goals = getGoals(patientId);
   if (goals.length > 0) {
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Área', 'Meta', 'Status', 'Progresso']],
       body: goals.map(g => [g.area, g.description, getStatusLabel(g.status), `${g.progress}%`]),
@@ -79,7 +74,7 @@ export function generatePatientReport(patientId: string, startDate?: string, end
       alternateRowStyles: { fillColor: [245, 247, 250] },
       margin: { left: 14, right: 14 },
     });
-    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY + 10;
   } else {
     y += 6;
     doc.setFontSize(10);
@@ -130,7 +125,7 @@ export function generatePatientReport(patientId: string, startDate?: string, end
   if (endDate) abcRecords = abcRecords.filter(r => r.date <= endDate);
 
   if (abcRecords.length > 0) {
-    doc.autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Data', 'Antecedente', 'Comportamento', 'Consequência']],
       body: abcRecords.map(r => [formatDate(r.date), r.antecedent, r.behavior, r.consequence]),
@@ -139,7 +134,7 @@ export function generatePatientReport(patientId: string, startDate?: string, end
       alternateRowStyles: { fillColor: [245, 247, 250] },
       margin: { left: 14, right: 14 },
     });
-    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+    y = (doc as any).lastAutoTable.finalY + 10;
   } else {
     y += 6;
     doc.setFontSize(10);
@@ -148,8 +143,8 @@ export function generatePatientReport(patientId: string, startDate?: string, end
     y += 10;
   }
 
-  // Attached Media
-  const media = getMedia(patientId);
+  // Attached Media from IndexedDB
+  const media = await getAllMedia(patientId);
   if (media.length > 0) {
     if (y > 200) { doc.addPage(); y = 20; }
     doc.setFontSize(14);

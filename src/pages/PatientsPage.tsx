@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Plus, ChevronRight } from 'lucide-react';
-import { getPatients, calculateAge, type Patient, seedDemoData } from '@/lib/data';
+import { getPatients, calculateAge, type Patient } from '@/lib/data';
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    seedDemoData();
     setPatients(getPatients());
   }, []);
 
