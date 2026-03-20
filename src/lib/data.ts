@@ -54,7 +54,6 @@ const STORAGE_KEYS = {
   goals: 'ep_goals',
   notes: 'ep_notes',
   abc: 'ep_abc',
-  media: 'ep_media',
 };
 
 function load<T>(key: string): T[] {
