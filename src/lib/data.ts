@@ -44,15 +44,6 @@ export interface ABCRecord {
   consequence: string;
 }
 
-export interface MediaItem {
-  id: string;
-  patientId: string;
-  date: string;
-  name: string;
-  type: string;
-  dataUrl: string;
-}
-
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
