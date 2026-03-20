@@ -102,12 +102,11 @@ export function updatePatient(id: string, data: Partial<Patient>) {
 
 export function deletePatient(id: string) {
   save(STORAGE_KEYS.patients, getPatients().filter(p => p.id !== id));
-  // Also delete related data
   save(STORAGE_KEYS.sessions, load<Session>(STORAGE_KEYS.sessions).filter(s => s.patientId !== id));
   save(STORAGE_KEYS.goals, load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.patientId !== id));
   save(STORAGE_KEYS.notes, load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.patientId !== id));
   save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.patientId !== id));
-  save(STORAGE_KEYS.media, load<MediaItem>(STORAGE_KEYS.media).filter(m => m.patientId !== id));
+  deleteAllPatientMedia(id);
 }
 
 // Sessions
