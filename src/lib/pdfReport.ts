@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { getPatient, getNotes, getGoals, getABCRecords, calculateAge, formatDate, getStatusLabel } from './data';
+import { getPatient, getNotes, getGoals, getABCRecords, getSessions, calculateAge, formatDate, getStatusLabel } from './data';
 import { getAllMedia } from './mediaStore';
 
 export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string): Promise<boolean> {
