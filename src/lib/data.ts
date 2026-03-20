@@ -182,47 +182,6 @@ export function deleteABCRecord(id: string) {
   save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.id !== id));
 }
 
-// Media
-export function getMedia(patientId: string): MediaItem[] {
-  return load<MediaItem>(STORAGE_KEYS.media).filter(m => m.patientId === patientId);
-}
-
-export function saveMedia(item: Omit<MediaItem, 'id'>): MediaItem {
-  const items = load<MediaItem>(STORAGE_KEYS.media);
-  const newItem: MediaItem = { ...item, id: generateId() };
-  items.push(newItem);
-  save(STORAGE_KEYS.media, items);
-  return newItem;
-}
-
-export function deleteMedia(id: string) {
-  save(STORAGE_KEYS.media, load<MediaItem>(STORAGE_KEYS.media).filter(m => m.id !== id));
-}
-
-// Seed demo data
-export function seedDemoData() {
-  if (getPatients().length > 0) return;
-
-  const p1 = savePatient({ name: 'Lucas Ferreira', birthDate: '2018-03-15', cid: 'F84.0', parentNames: 'Maria e João Ferreira', phone: '11999887766' });
-  const p2 = savePatient({ name: 'Sofia Santos', birthDate: '2019-07-22', cid: 'F84.0', parentNames: 'Ana e Carlos Santos', phone: '11988776655' });
-  const p3 = savePatient({ name: 'Miguel Oliveira', birthDate: '2020-01-10', cid: 'F84.1', parentNames: 'Juliana Oliveira', phone: '11977665544' });
-
-  const today = new Date().toISOString().split('T')[0];
-  saveSession({ patientId: p1.id, date: today, time: '09:00', notes: '', completed: false });
-  saveSession({ patientId: p2.id, date: today, time: '10:30', notes: '', completed: false });
-  saveSession({ patientId: p3.id, date: today, time: '14:00', notes: '', completed: false });
-
-  saveGoal({ patientId: p1.id, area: 'Comunicação', description: 'Usar frases de 3 palavras', status: 'in_progress', progress: 45 });
-  saveGoal({ patientId: p1.id, area: 'Social', description: 'Iniciar brincadeiras com pares', status: 'not_started', progress: 0 });
-  saveGoal({ patientId: p1.id, area: 'Motor', description: 'Coordenação fina com tesoura', status: 'in_progress', progress: 70 });
-
-  saveGoal({ patientId: p2.id, area: 'Comunicação', description: 'Responder ao próprio nome', status: 'completed', progress: 100 });
-  saveGoal({ patientId: p2.id, area: 'Social', description: 'Contato visual em interações', status: 'in_progress', progress: 60 });
-
-  saveNote({ patientId: p1.id, date: '2026-03-18', content: 'Lucas demonstrou boa resposta ao uso de pranchas de comunicação. Conseguiu pedir "água" e "bola" de forma espontânea.' });
-  saveNote({ patientId: p1.id, date: '2026-03-13', content: 'Sessão focada em atividades de recorte. Progresso na preensão da tesoura, mas ainda precisa de suporte físico parcial.' });
-  saveNote({ patientId: p2.id, date: '2026-03-19', content: 'Sofia manteve contato visual por períodos mais longos durante atividades de interesse. Excelente progresso.' });
-}
 
 export function calculateAge(birthDate: string): number {
   const birth = new Date(birthDate);
