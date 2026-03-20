@@ -1,0 +1,192 @@
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import { getPatient, getNotes, getGoals, getABCRecords, getMedia, calculateAge, formatDate, getStatusLabel, type Patient } from './data';
+
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: Record<string, unknown>) => jsPDF;
+  }
+}
+
+export function generatePatientReport(patientId: string, startDate?: string, endDate?: string): boolean {
+  const patient = getPatient(patientId);
+  if (!patient) return false;
+
+  const doc = new jsPDF();
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 20;
+
+  // Header
+  doc.setFillColor(100, 149, 200);
+  doc.rect(0, 0, pageWidth, 40, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Evolução Psicopedagógica', pageWidth / 2, 18, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Relatório Profissional', pageWidth / 2, 28, { align: 'center' });
+  doc.text(`Gerado em: ${formatDate(new Date().toISOString().split('T')[0])}`, pageWidth / 2, 35, { align: 'center' });
+
+  y = 50;
+  doc.setTextColor(50, 50, 50);
+
+  // Patient Info
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Dados do Paciente', 14, y);
+  y += 8;
+
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  const info = [
+    `Nome: ${patient.name}`,
+    `Idade: ${calculateAge(patient.birthDate)} anos`,
+    `Data de Nascimento: ${formatDate(patient.birthDate)}`,
+    `CID: ${patient.cid}`,
+    `Responsáveis: ${patient.parentNames || 'Não informado'}`,
+    `Telefone: ${patient.phone || 'Não informado'}`,
+  ];
+  info.forEach(line => {
+    doc.text(line, 14, y);
+    y += 6;
+  });
+
+  if (startDate || endDate) {
+    y += 2;
+    doc.setFont('helvetica', 'italic');
+    const periodText = `Período: ${startDate ? formatDate(startDate) : 'início'} a ${endDate ? formatDate(endDate) : 'atual'}`;
+    doc.text(periodText, 14, y);
+    y += 8;
+    doc.setFont('helvetica', 'normal');
+  }
+
+  // PTI Goals
+  y += 4;
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Plano Terapêutico Individual (PTI)', 14, y);
+  y += 4;
+
+  const goals = getGoals(patientId);
+  if (goals.length > 0) {
+    doc.autoTable({
+      startY: y,
+      head: [['Área', 'Meta', 'Status', 'Progresso']],
+      body: goals.map(g => [g.area, g.description, getStatusLabel(g.status), `${g.progress}%`]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+  } else {
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nenhuma meta cadastrada.', 14, y);
+    y += 10;
+  }
+
+  // Evolution Notes
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Notas de Evolução', 14, y);
+  y += 8;
+
+  let notes = getNotes(patientId).sort((a, b) => b.date.localeCompare(a.date));
+  if (startDate) notes = notes.filter(n => n.date >= startDate);
+  if (endDate) notes = notes.filter(n => n.date <= endDate);
+
+  if (notes.length > 0) {
+    doc.setFontSize(10);
+    notes.forEach(note => {
+      if (y > 260) { doc.addPage(); y = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.text(formatDate(note.date), 14, y);
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(note.content, pageWidth - 28);
+      doc.text(lines, 14, y);
+      y += lines.length * 5 + 6;
+    });
+  } else {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nenhuma nota de evolução no período.', 14, y);
+    y += 10;
+  }
+
+  // ABC Records
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Registros de Comportamento (ABC)', 14, y);
+  y += 4;
+
+  let abcRecords = getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date));
+  if (startDate) abcRecords = abcRecords.filter(r => r.date >= startDate);
+  if (endDate) abcRecords = abcRecords.filter(r => r.date <= endDate);
+
+  if (abcRecords.length > 0) {
+    doc.autoTable({
+      startY: y,
+      head: [['Data', 'Antecedente', 'Comportamento', 'Consequência']],
+      body: abcRecords.map(r => [formatDate(r.date), r.antecedent, r.behavior, r.consequence]),
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
+  } else {
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Nenhum registro ABC no período.', 14, y);
+    y += 10;
+  }
+
+  // Attached Media
+  const media = getMedia(patientId);
+  if (media.length > 0) {
+    if (y > 200) { doc.addPage(); y = 20; }
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Fotos Anexadas', 14, y);
+    y += 8;
+
+    let x = 14;
+    const imgSize = 55;
+    media.forEach((item) => {
+      if (x + imgSize > pageWidth - 14) {
+        x = 14;
+        y += imgSize + 10;
+      }
+      if (y + imgSize > 280) { doc.addPage(); y = 20; x = 14; }
+      try {
+        doc.addImage(item.dataUrl, 'JPEG', x, y, imgSize, imgSize);
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        doc.text(formatDate(item.date), x, y + imgSize + 4);
+      } catch {
+        // skip invalid images
+      }
+      x += imgSize + 8;
+    });
+  }
+
+  // Footer on each page
+  const pageCount = doc.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('Evolução Psicopedagógica — Relatório confidencial', pageWidth / 2, 290, { align: 'center' });
+    doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, 290, { align: 'right' });
+  }
+
+  doc.save(`Relatorio_${patient.name.replace(/\s+/g, '_')}.pdf`);
+  return true;
+}

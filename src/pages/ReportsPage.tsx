@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FileText, Download } from 'lucide-react';
 import { getPatients, type Patient } from '@/lib/data';
+import { generatePatientReport } from '@/lib/pdfReport';
 import { toast } from 'sonner';
 
 export default function ReportsPage() {
@@ -8,6 +9,7 @@ export default function ReportsPage() {
   const [selectedPatient, setSelectedPatient] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     setPatients(getPatients());
@@ -18,7 +20,20 @@ export default function ReportsPage() {
       toast.error('Selecione um paciente.');
       return;
     }
-    toast.info('Funcionalidade de geração de PDF será implementada com o backend. Por enquanto, os dados estão prontos para exportação.');
+    setGenerating(true);
+    try {
+      const ok = generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined);
+      if (ok) {
+        toast.success('Relatório gerado com sucesso! Verifique seus downloads.');
+      } else {
+        toast.error('Paciente não encontrado.');
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao gerar relatório.');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   const inputClass = "w-full px-4 py-3 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow";
@@ -54,16 +69,17 @@ export default function ReportsPage() {
 
         <button
           onClick={handleGenerate}
-          className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98] mt-4 shadow-lg shadow-primary/20"
+          disabled={generating}
+          className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98] mt-4 shadow-lg shadow-primary/20 disabled:opacity-50"
         >
           <FileText size={20} />
-          Gerar Relatório Profissional
+          {generating ? 'Gerando...' : 'Gerar Relatório Profissional'}
         </button>
 
         <div className="bg-accent/20 rounded-xl p-5 mt-6 text-center">
           <Download size={32} className="mx-auto mb-3 text-accent-foreground opacity-50" />
           <p className="text-sm text-muted-foreground">
-            Selecione o paciente e o período desejado, depois clique no botão acima para gerar o relatório em PDF.
+            O relatório incluirá: dados do paciente, metas do PTI, notas de evolução, registros ABC e fotos anexadas.
           </p>
         </div>
       </div>

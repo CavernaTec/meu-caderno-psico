@@ -1,20 +1,41 @@
 import { useEffect, useState } from 'react';
-import { Plus, AlertTriangle } from 'lucide-react';
-import { getABCRecords, saveABCRecord, formatDate, type ABCRecord } from '@/lib/data';
+import { Plus, AlertTriangle, Trash2 } from 'lucide-react';
+import { getABCRecords, saveABCRecord, deleteABCRecord, formatDate, type ABCRecord } from '@/lib/data';
 import { toast } from 'sonner';
 
 const QUICK_ANTECEDENTS = ['Mudança de rotina', 'Demanda acadêmica', 'Frustração', 'Transição de atividade', 'Estímulo sensorial'];
 const QUICK_BEHAVIORS = ['Choro', 'Grito', 'Autoestimulação', 'Agressão', 'Fuga da tarefa', 'Mordida'];
 const QUICK_CONSEQUENCES = ['Redirecionado', 'Pausa sensorial', 'Apoio verbal', 'Ignorado', 'Mudança de atividade'];
 
+function QuickSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2">
+      {options.map(opt => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(value === opt ? '' : opt)}
+          className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all active:scale-95 ${
+            value === opt ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function ABCTab({ patientId }: { patientId: string }) {
   const [records, setRecords] = useState<ABCRecord[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ antecedent: '', behavior: '', consequence: '' });
 
-  useEffect(() => {
+  function reload() {
     setRecords(getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date)));
-  }, [patientId]);
+  }
+
+  useEffect(() => { reload(); }, [patientId]);
 
   function handleSave() {
     if (!form.antecedent || !form.behavior || !form.consequence) {
@@ -22,29 +43,17 @@ export default function ABCTab({ patientId }: { patientId: string }) {
       return;
     }
     saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...form });
-    setRecords(getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+    reload();
     setForm({ antecedent: '', behavior: '', consequence: '' });
     setShowForm(false);
     toast.success('Registro salvo!');
   }
 
-  function QuickSelect({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
-    return (
-      <div className="flex flex-wrap gap-1.5 mt-2">
-        {options.map(opt => (
-          <button
-            key={opt}
-            type="button"
-            onClick={() => onChange(value === opt ? '' : opt)}
-            className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-all active:scale-95 ${
-              value === opt ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {opt}
-          </button>
-        ))}
-      </div>
-    );
+  function handleDelete(id: string) {
+    if (!confirm('Remover este registro?')) return;
+    deleteABCRecord(id);
+    reload();
+    toast.success('Registro removido.');
   }
 
   return (
@@ -88,7 +97,12 @@ export default function ABCTab({ patientId }: { patientId: string }) {
 
       {records.map(record => (
         <div key={record.id} className="bg-card border rounded-xl p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">{formatDate(record.date)}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold text-muted-foreground">{formatDate(record.date)}</p>
+            <button onClick={() => handleDelete(record.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
+              <Trash2 size={14} />
+            </button>
+          </div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             <div className="bg-destructive/5 rounded-lg p-2.5">
               <p className="font-semibold text-destructive mb-0.5">Antecedente</p>

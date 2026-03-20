@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageCircle } from 'lucide-react';
-import { getPatient, calculateAge, formatDate, type Patient } from '@/lib/data';
+import { ArrowLeft, Phone, MessageCircle, Trash2 } from 'lucide-react';
+import { getPatient, calculateAge, deletePatient, type Patient } from '@/lib/data';
 import PatientTabs from '@/components/PatientTabs';
+import { toast } from 'sonner';
 
 export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -12,6 +13,14 @@ export default function PatientDetailPage() {
   useEffect(() => {
     if (id) setPatient(getPatient(id));
   }, [id]);
+
+  function handleDelete() {
+    if (!patient) return;
+    if (!confirm(`Tem certeza que deseja excluir ${patient.name}? Todos os dados serão removidos.`)) return;
+    deletePatient(patient.id);
+    toast.success('Paciente removido.');
+    navigate('/pacientes');
+  }
 
   if (!patient) {
     return (
@@ -26,12 +35,16 @@ export default function PatientDetailPage() {
 
   return (
     <div className="container max-w-2xl py-8 px-4 md:px-0">
-      <button onClick={() => navigate('/pacientes')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors active:scale-95">
-        <ArrowLeft size={18} />
-        <span className="text-sm font-semibold">Pacientes</span>
-      </button>
+      <div className="flex items-center justify-between mb-6">
+        <button onClick={() => navigate('/pacientes')} className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors active:scale-95">
+          <ArrowLeft size={18} />
+          <span className="text-sm font-semibold">Pacientes</span>
+        </button>
+        <button onClick={handleDelete} className="flex items-center gap-1.5 text-destructive text-sm font-semibold hover:opacity-80 active:scale-95 transition-all">
+          <Trash2 size={16} /> Excluir
+        </button>
+      </div>
 
-      {/* Patient Header */}
       <div className="animate-fade-in mb-6">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
