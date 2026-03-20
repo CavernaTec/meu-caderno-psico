@@ -15,14 +15,14 @@ export default function ReportsPage() {
     setPatients(getPatients());
   }, []);
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!selectedPatient) {
       toast.error('Selecione um paciente.');
       return;
     }
     setGenerating(true);
     try {
-      const ok = generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined);
+      const ok = await generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined);
       if (ok) {
         toast.success('Relatório gerado com sucesso! Verifique seus downloads.');
       } else {
