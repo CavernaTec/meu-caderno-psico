@@ -170,6 +170,124 @@ export async function generatePatientReport(patientId: string, startDate?: strin
     }
   }
 
+  // ===== TEST RESULTS =====
+  const testResults = getAllTestResults(patientId);
+
+  // Portage
+  const portageAnswered = Object.keys(testResults.portage.data.answers).filter(k => testResults.portage.data.answers[k] !== undefined).length;
+  if (portageAnswered > 0) {
+    if (y > 200) { doc.addPage(); y = 20; }
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Escala Portage — Perfil de Desenvolvimento', 14, y);
+    y += 4;
+    const portageRows = PORTAGE_AREAS.map(a => [
+      a.label,
+      `${testResults.portage.results[a.key]?.devAge || 0} meses`,
+      `${testResults.portage.results[a.key]?.percentage || 0}%`,
+    ]);
+    autoTable(doc, {
+      startY: y,
+      head: [['Área', 'Idade de Desenvolvimento', 'Desempenho']],
+      body: portageRows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
+  // M-CHAT
+  if (testResults.mchat.results.answered > 0) {
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('M-CHAT-R — Rastreio para TEA', 14, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const mr = testResults.mchat.results;
+    doc.text(`Perguntas respondidas: ${mr.answered}/23`, 14, y); y += 5;
+    doc.text(`Falhas totais: ${mr.totalFails} | Falhas em itens críticos: ${mr.criticalFails}`, 14, y); y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Resultado: ${mr.risk ? '⚠ RISCO PARA TEA — encaminhamento recomendado' : '✔ Sem risco identificado'}`, 14, y);
+    y += 10;
+  }
+
+  // CARS
+  if (testResults.cars.results.answered > 0) {
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CARS — Escala de Avaliação de Autismo', 14, y);
+    y += 6;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const cr = testResults.cars.results;
+    doc.text(`Itens avaliados: ${cr.answered}/15 | Pontuação total: ${cr.total}`, 14, y); y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Classificação: ${cr.classification}`, 14, y);
+    y += 10;
+  }
+
+  // EOCA
+  const eocaData = testResults.eoca.data;
+  const hasEOCA = Object.values(eocaData.tematica).some(v => v) || Object.values(eocaData.dinamica).some(v => v) || Object.values(eocaData.produto).some(v => v) || eocaData.modalidade;
+  if (hasEOCA) {
+    if (y > 200) { doc.addPage(); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EOCA — Entrevista Operativa Centrada na Aprendizagem', 14, y);
+    y += 6;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+
+    const eocaSections = [
+      { label: 'Temática', items: EOCA_TEMATICA, data: eocaData.tematica },
+      { label: 'Dinâmica', items: EOCA_DINAMICA, data: eocaData.dinamica },
+      { label: 'Produto', items: EOCA_PRODUTO, data: eocaData.produto },
+    ];
+    for (const sec of eocaSections) {
+      const checked = sec.items.filter(i => sec.data[i.id]);
+      if (checked.length > 0) {
+        doc.setFont('helvetica', 'bold');
+        doc.text(`${sec.label}:`, 14, y); y += 4;
+        doc.setFont('helvetica', 'normal');
+        checked.forEach(i => { doc.text(`• ${i.text}`, 18, y); y += 4; });
+        y += 2;
+      }
+    }
+
+    if (eocaData.modalidade) {
+      const mod = EOCA_MODALIDADES.find(m => m.value === eocaData.modalidade);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Modalidade de Aprendizagem: ${mod?.label || eocaData.modalidade}`, 14, y);
+      y += 8;
+    }
+  }
+
+  // Autonomy
+  const autonomyScored = Object.keys(testResults.autonomy.data.scores).length;
+  if (autonomyScored > 0) {
+    if (y > 200) { doc.addPage(); y = 20; }
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Avaliação de Autonomia (Humanizzare)', 14, y);
+    y += 4;
+    const autRows = Object.entries(testResults.autonomy.results).map(([cat, r]) => [cat, `${r.score}/${r.max}`, `${r.percentage}%`]);
+    autoTable(doc, {
+      startY: y,
+      head: [['Categoria', 'Pontuação', 'Percentual']],
+      body: autRows,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
   // Sessions
   y += 4;
   doc.setFontSize(14);
