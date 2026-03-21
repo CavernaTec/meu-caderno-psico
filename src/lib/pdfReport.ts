@@ -2,6 +2,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getPatient, getNotes, getGoals, getABCRecords, getSessions, getAssessment, calculateAge, formatDate, getStatusLabel } from './data';
 import { getAllMedia } from './mediaStore';
+import {
+  getAllTestResults, PORTAGE_AREAS, EOCA_MODALIDADES,
+  EOCA_TEMATICA, EOCA_DINAMICA, EOCA_PRODUTO,
+  AUTONOMY_ITEMS, MCHAT_QUESTIONS,
+} from './testsData';
 
 export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string): Promise<boolean> {
   const patient = getPatient(patientId);
