@@ -475,6 +475,12 @@ export async function generatePatientReport(patientId: string, startDate?: strin
     doc.text(`Página ${i} de ${pageCount}`, pageWidth - 14, 290, { align: 'right' });
   }
 
-  doc.save(`Relatorio_${patient.name.replace(/\s+/g, '_')}.pdf`);
+  if (preview) {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank');
+  } else {
+    doc.save(`Relatorio_${patient.name.replace(/\s+/g, '_')}.pdf`);
+  }
   return true;
 }
