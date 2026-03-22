@@ -243,14 +243,16 @@ export function savePortageData(patientId: string, data: PortageData) {
   savePatientTest(patientId, 'portage', data);
 }
 
-/** Calculate developmental age in months per area */
+/** Calculate developmental age in months per area.
+ *  Formula: For each age range, devAge += (pointsObtained × 12) / totalItemsInRange
+ *  Then sum across all ranges for each area. */
 export function calculatePortageResults(data: PortageData) {
   const results: Record<string, { devAge: number; percentage: number }> = {};
 
   for (const area of PORTAGE_AREAS) {
+    let devAge = 0;
     let totalScore = 0;
     let totalItems = 0;
-    let lastPassedRange = 0;
 
     for (let ri = 0; ri < AGE_RANGES.length; ri++) {
       const range = AGE_RANGES[ri];
@@ -262,18 +264,15 @@ export function calculatePortageResults(data: PortageData) {
         rangeScore += data.answers[item.id] ?? 0;
       });
 
+      // (points × 12) / total items in this range
+      devAge += (rangeScore * 12) / items.length;
+
       totalScore += rangeScore;
       totalItems += items.length;
-
-      const rangePct = rangeScore / items.length;
-      if (rangePct >= 0.5) {
-        lastPassedRange = ri + 1; // age in years
-      }
     }
 
-    const devAge = lastPassedRange * 12; // convert years to months
     const percentage = totalItems > 0 ? Math.round((totalScore / totalItems) * 100) : 0;
-    results[area.key] = { devAge, percentage };
+    results[area.key] = { devAge: Math.round(devAge * 10) / 10, percentage };
   }
 
   return results;
