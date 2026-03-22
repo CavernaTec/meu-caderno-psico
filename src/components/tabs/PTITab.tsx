@@ -3,7 +3,7 @@ import { Plus, Target, Trash2 } from 'lucide-react';
 import { getGoals, saveGoal, updateGoal, deleteGoal, getStatusLabel, getStatusColor, type PTIGoal } from '@/lib/data';
 import { toast } from 'sonner';
 
-const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental'];
+const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental', 'Outro'];
 const STATUSES: PTIGoal['status'][] = ['not_started', 'in_progress', 'completed'];
 
 export default function PTITab({ patientId }: { patientId: string }) {
