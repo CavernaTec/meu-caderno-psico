@@ -15,16 +15,16 @@ export default function ReportsPage() {
     setPatients(getPatients());
   }, []);
 
-  async function handleGenerate() {
+  async function handleGenerate(preview = false) {
     if (!selectedPatient) {
       toast.error('Selecione um paciente.');
       return;
     }
     setGenerating(true);
     try {
-      const ok = await generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined);
+      const ok = await generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined, preview);
       if (ok) {
-        toast.success('Relatório gerado com sucesso! Verifique seus downloads.');
+        toast.success(preview ? 'Visualização aberta em nova aba!' : 'Relatório gerado com sucesso! Verifique seus downloads.');
       } else {
         toast.error('Paciente não encontrado.');
       }
