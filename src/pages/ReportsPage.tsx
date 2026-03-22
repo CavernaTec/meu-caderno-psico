@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Eye } from 'lucide-react';
 import { getPatients, type Patient } from '@/lib/data';
 import { generatePatientReport } from '@/lib/pdfReport';
 import { toast } from 'sonner';
