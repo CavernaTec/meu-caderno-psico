@@ -22,7 +22,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(20);
   doc.setFont('helvetica', 'bold');
-  doc.text('Evolução Psicopedagógica', pageWidth / 2, 18, { align: 'center' });
+  doc.text('Psicopedagogia', pageWidth / 2, 18, { align: 'center' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text('Relatório Profissional', pageWidth / 2, 28, { align: 'center' });
