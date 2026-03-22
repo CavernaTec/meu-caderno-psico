@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Eye } from 'lucide-react';
 import { getPatients, type Patient } from '@/lib/data';
 import { generatePatientReport } from '@/lib/pdfReport';
 import { toast } from 'sonner';
@@ -15,16 +15,16 @@ export default function ReportsPage() {
     setPatients(getPatients());
   }, []);
 
-  async function handleGenerate() {
+  async function handleGenerate(preview = false) {
     if (!selectedPatient) {
       toast.error('Selecione um paciente.');
       return;
     }
     setGenerating(true);
     try {
-      const ok = await generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined);
+      const ok = await generatePatientReport(selectedPatient, startDate || undefined, endDate || undefined, preview);
       if (ok) {
-        toast.success('Relatório gerado com sucesso! Verifique seus downloads.');
+        toast.success(preview ? 'Visualização aberta em nova aba!' : 'Relatório gerado com sucesso! Verifique seus downloads.');
       } else {
         toast.error('Paciente não encontrado.');
       }
@@ -68,12 +68,21 @@ export default function ReportsPage() {
         </div>
 
         <button
-          onClick={handleGenerate}
+          onClick={() => handleGenerate(true)}
           disabled={generating}
-          className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98] mt-4 shadow-lg shadow-primary/20 disabled:opacity-50"
+          className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98] mt-4 border disabled:opacity-50"
+        >
+          <Eye size={20} />
+          {generating ? 'Gerando...' : 'Visualizar Relatório'}
+        </button>
+
+        <button
+          onClick={() => handleGenerate(false)}
+          disabled={generating}
+          className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-base flex items-center justify-center gap-3 hover:opacity-90 transition-opacity active:scale-[0.98] mt-2 shadow-lg shadow-primary/20 disabled:opacity-50"
         >
           <FileText size={20} />
-          {generating ? 'Gerando...' : 'Gerar Relatório Profissional'}
+          {generating ? 'Gerando...' : 'Baixar Relatório PDF'}
         </button>
 
         <div className="bg-accent/20 rounded-xl p-5 mt-6 text-center">
