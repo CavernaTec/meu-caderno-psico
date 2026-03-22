@@ -17,9 +17,14 @@ export default function PTITab({ patientId }: { patientId: string }) {
 
   function handleAdd() {
     if (!newGoal.description.trim()) return;
-    saveGoal({ patientId, area: newGoal.area, description: newGoal.description, status: 'not_started', progress: 0 });
+    const areaName = newGoal.area === 'Outro' ? (newGoal.customArea.trim() || 'Outro') : newGoal.area;
+    if (newGoal.area === 'Outro' && !newGoal.customArea.trim()) {
+      toast.error('Digite o nome da categoria personalizada.');
+      return;
+    }
+    saveGoal({ patientId, area: areaName, description: newGoal.description, status: 'not_started', progress: 0 });
     setGoals(getGoals(patientId));
-    setNewGoal({ area: AREAS[0], description: '' });
+    setNewGoal({ area: AREAS[0], description: '', customArea: '' });
     setShowForm(false);
     toast.success('Meta adicionada!');
   }
