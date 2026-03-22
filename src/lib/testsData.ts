@@ -287,6 +287,7 @@ export interface EOCAData {
   produto: Record<string, boolean>;
   modalidade: string;
   observacoes: string;
+  conclusao: string;
 }
 
 export const EOCA_TEMATICA = [
