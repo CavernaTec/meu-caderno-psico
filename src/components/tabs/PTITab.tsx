@@ -9,7 +9,7 @@ const STATUSES: PTIGoal['status'][] = ['not_started', 'in_progress', 'completed'
 export default function PTITab({ patientId }: { patientId: string }) {
   const [goals, setGoals] = useState<PTIGoal[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newGoal, setNewGoal] = useState({ area: AREAS[0], description: '' });
+  const [newGoal, setNewGoal] = useState({ area: AREAS[0], description: '', customArea: '' });
 
   useEffect(() => {
     setGoals(getGoals(patientId));
