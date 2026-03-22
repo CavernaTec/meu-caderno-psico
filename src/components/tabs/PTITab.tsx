@@ -3,13 +3,13 @@ import { Plus, Target, Trash2 } from 'lucide-react';
 import { getGoals, saveGoal, updateGoal, deleteGoal, getStatusLabel, getStatusColor, type PTIGoal } from '@/lib/data';
 import { toast } from 'sonner';
 
-const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental'];
+const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental', 'Outro'];
 const STATUSES: PTIGoal['status'][] = ['not_started', 'in_progress', 'completed'];
 
 export default function PTITab({ patientId }: { patientId: string }) {
   const [goals, setGoals] = useState<PTIGoal[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newGoal, setNewGoal] = useState({ area: AREAS[0], description: '' });
+  const [newGoal, setNewGoal] = useState({ area: AREAS[0], description: '', customArea: '' });
 
   useEffect(() => {
     setGoals(getGoals(patientId));
@@ -17,9 +17,14 @@ export default function PTITab({ patientId }: { patientId: string }) {
 
   function handleAdd() {
     if (!newGoal.description.trim()) return;
-    saveGoal({ patientId, area: newGoal.area, description: newGoal.description, status: 'not_started', progress: 0 });
+    const areaName = newGoal.area === 'Outro' ? (newGoal.customArea.trim() || 'Outro') : newGoal.area;
+    if (newGoal.area === 'Outro' && !newGoal.customArea.trim()) {
+      toast.error('Digite o nome da categoria personalizada.');
+      return;
+    }
+    saveGoal({ patientId, area: areaName, description: newGoal.description, status: 'not_started', progress: 0 });
     setGoals(getGoals(patientId));
-    setNewGoal({ area: AREAS[0], description: '' });
+    setNewGoal({ area: AREAS[0], description: '', customArea: '' });
     setShowForm(false);
     toast.success('Meta adicionada!');
   }
@@ -55,8 +60,16 @@ export default function PTITab({ patientId }: { patientId: string }) {
             onChange={e => setNewGoal(g => ({ ...g, area: e.target.value }))}
             className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
           >
-            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+             {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+           </select>
+           {newGoal.area === 'Outro' && (
+             <input
+               placeholder="Nome da categoria personalizada..."
+               value={newGoal.customArea}
+               onChange={e => setNewGoal(g => ({ ...g, customArea: e.target.value }))}
+               className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
+             />
+           )}
           <input
             placeholder="Descreva a meta..."
             value={newGoal.description}

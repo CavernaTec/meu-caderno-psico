@@ -93,14 +93,41 @@ export default function PortageTest({ patientId }: { patientId: string }) {
               <Bar dataKey="Idade Desenvolvimento (meses)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+
+          {/* Result Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-4">
-            {PORTAGE_AREAS.map(area => (
-              <div key={area.key} className="text-center p-2 rounded-lg bg-muted/50">
-                <p className="text-[10px] text-muted-foreground">{area.label}</p>
-                <p className="text-lg font-bold text-primary">{results[area.key]?.devAge || 0}m</p>
-                <p className="text-[10px] text-muted-foreground">{results[area.key]?.percentage || 0}%</p>
-              </div>
-            ))}
+            {PORTAGE_AREAS.map(area => {
+              const r = results[area.key];
+              const diff = r ? r.devAge - realAgeMonths : 0;
+              return (
+                <div key={area.key} className="text-center p-2 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground">{area.label}</p>
+                  <p className="text-lg font-bold text-primary">{r?.devAge || 0}m</p>
+                  <p className="text-[10px] text-muted-foreground">{r?.percentage || 0}%</p>
+                  <p className={`text-[10px] font-semibold mt-0.5 ${diff >= 0 ? 'text-success' : 'text-destructive'}`}>
+                    {diff >= 0 ? '+' : ''}{diff.toFixed(1)}m
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary Card */}
+          <div className="mt-4 p-3 rounded-xl border bg-primary/5 border-primary/20">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold text-foreground">Idade Cronológica</span>
+              <span className="font-bold text-primary">{realAgeMonths} meses</span>
+            </div>
+            <div className="flex items-center justify-between text-sm mt-1">
+              <span className="font-semibold text-foreground">Média I.D.</span>
+              <span className="font-bold text-primary">
+                {(() => {
+                  const vals = PORTAGE_AREAS.map(a => results[a.key]?.devAge || 0);
+                  const avg = vals.reduce((s, v) => s + v, 0) / vals.length;
+                  return avg.toFixed(1);
+                })()} meses
+              </span>
+            </div>
           </div>
         </div>
       )}

@@ -38,7 +38,7 @@ export default function EOCAChecklist({ patientId }: { patientId: string }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <FileText size={20} className="text-primary" />
+          <FileText size={20} className="text-accent" />
           <h3 className="font-semibold text-foreground">Checklist EOCA</h3>
         </div>
         <button
@@ -85,7 +85,7 @@ export default function EOCAChecklist({ patientId }: { patientId: string }) {
                   onClick={() => setData(prev => ({ ...prev, modalidade: prev.modalidade === mod.value ? '' : mod.value }))}
                   className={`w-full text-left p-3 rounded-lg border transition-all ${
                     data.modalidade === mod.value
-                      ? 'bg-primary/10 border-primary/30 text-primary'
+                      ? 'bg-accent/10 border-accent/30 text-accent-foreground'
                       : 'bg-muted/30 border-transparent text-foreground'
                   }`}
                 >
@@ -97,11 +97,23 @@ export default function EOCAChecklist({ patientId }: { patientId: string }) {
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem value="obs" className="border rounded-xl px-4 bg-card shadow-sm">
-          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Observações</AccordionTrigger>
+        <AccordionItem value="conclusao" className="border rounded-xl px-4 bg-card shadow-sm">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Resultado Final / Conclusão</AccordionTrigger>
           <AccordionContent>
             <Textarea
-              placeholder="Observações gerais da EOCA..."
+              placeholder="Conclusão da EOCA — síntese dos achados..."
+              value={data.conclusao || ''}
+              onChange={e => setData(prev => ({ ...prev, conclusao: e.target.value }))}
+              className="text-sm min-h-[100px] mb-3"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="obs" className="border rounded-xl px-4 bg-card shadow-sm">
+          <AccordionTrigger className="text-sm font-semibold hover:no-underline">Observações e Encaminhamentos</AccordionTrigger>
+          <AccordionContent>
+            <Textarea
+              placeholder="Observações gerais e encaminhamentos..."
               value={data.observacoes}
               onChange={e => setData(prev => ({ ...prev, observacoes: e.target.value }))}
               className="text-sm min-h-[80px]"

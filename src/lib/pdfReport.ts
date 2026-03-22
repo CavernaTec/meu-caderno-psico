@@ -263,8 +263,32 @@ export async function generatePatientReport(patientId: string, startDate?: strin
       const mod = EOCA_MODALIDADES.find(m => m.value === eocaData.modalidade);
       doc.setFont('helvetica', 'bold');
       doc.text(`Modalidade de Aprendizagem: ${mod?.label || eocaData.modalidade}`, 14, y);
-      y += 8;
+      y += 5;
+      if (mod) {
+        doc.setFont('helvetica', 'normal');
+        doc.text(mod.desc, 18, y); y += 5;
+      }
+      y += 3;
     }
+
+    if (eocaData.conclusao?.trim()) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.text('Conclusão da EOCA:', 14, y); y += 5;
+      doc.setFont('helvetica', 'normal');
+      const cl = doc.splitTextToSize(eocaData.conclusao, pageWidth - 28);
+      doc.text(cl, 14, y); y += cl.length * 5 + 3;
+    }
+
+    if (eocaData.observacoes?.trim()) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFont('helvetica', 'bold');
+      doc.text('Observações e Encaminhamentos:', 14, y); y += 5;
+      doc.setFont('helvetica', 'normal');
+      const ol = doc.splitTextToSize(eocaData.observacoes, pageWidth - 28);
+      doc.text(ol, 14, y); y += ol.length * 5 + 3;
+    }
+    y += 5;
   }
 
   // Autonomy
