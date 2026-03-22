@@ -60,8 +60,16 @@ export default function PTITab({ patientId }: { patientId: string }) {
             onChange={e => setNewGoal(g => ({ ...g, area: e.target.value }))}
             className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
           >
-            {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+             {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+           </select>
+           {newGoal.area === 'Outro' && (
+             <input
+               placeholder="Nome da categoria personalizada..."
+               value={newGoal.customArea}
+               onChange={e => setNewGoal(g => ({ ...g, customArea: e.target.value }))}
+               className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
+             />
+           )}
           <input
             placeholder="Descreva a meta..."
             value={newGoal.description}

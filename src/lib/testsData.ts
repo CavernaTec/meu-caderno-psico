@@ -326,7 +326,7 @@ export const EOCA_MODALIDADES = [
 ];
 
 export function getEOCAData(patientId: string): EOCAData {
-  return loadPatientTests(patientId).eoca || { tematica: {}, dinamica: {}, produto: {}, modalidade: '', observacoes: '' };
+  return loadPatientTests(patientId).eoca || { tematica: {}, dinamica: {}, produto: {}, modalidade: '', observacoes: '', conclusao: '' };
 }
 
 export function saveEOCAData(patientId: string, data: EOCAData) {
