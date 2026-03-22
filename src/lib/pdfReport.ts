@@ -8,7 +8,7 @@ import {
   AUTONOMY_ITEMS, MCHAT_QUESTIONS,
 } from './testsData';
 
-export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string): Promise<boolean> {
+export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string, preview?: boolean): Promise<boolean> {
   const patient = getPatient(patientId);
   if (!patient) return false;
 
