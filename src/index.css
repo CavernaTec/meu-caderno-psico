@@ -1,9 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+
 #lovable-badge {
   display: none !important;
   z-index: -1000 !important;
 }
-
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -11,28 +11,28 @@
 
 @layer base {
   :root {
-    --background: 210 33% 98%;
-    --foreground: 215 25% 22%;
+    --background: 36 44% 96%;
+    --foreground: 18 18% 22%;
 
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 22%;
+    --card-foreground: 18 18% 22%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 215 25% 22%;
 
-    --primary: 210 60% 58%;
+    --primary: 150 24% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 30% 93%;
-    --secondary-foreground: 215 25% 22%;
+    --secondary: 36 30% 92%;
+    --secondary-foreground: 18 18% 22%;
 
-    --muted: 210 20% 95%;
-    --muted-foreground: 215 12% 52%;
+    --muted: 36 24% 93%;
+    --muted-foreground: 22 10% 46%;
 
-    --accent: 260 35% 72%;
-    --accent-foreground: 260 40% 25%;
+    --accent: 220 65% 78%;
+    --accent-foreground: 220 35% 24%;
 
-    --success: 145 30% 50%;
+    --success: 150 30% 45%;
     --success-foreground: 0 0% 100%;
 
     --destructive: 15 60% 55%;

@@ -1,112 +1,122 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Play, Clock, CheckCircle2 } from 'lucide-react';
-import { getTodaySessions, getPatient, type Session, type Patient, updateSession } from '@/lib/data';
+import { Link } from 'react-router-dom';
+import { Users, CalendarDays, Plus, FileText, Brain, ArrowRight } from 'lucide-react';
+import { getPatients, getSessions } from '@/lib/data';
 
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return 'Bom dia';
-  if (h < 18) return 'Boa tarde';
-  return 'Boa noite';
+function formatLongDate(date: Date): string {
+  const formatted = new Intl.DateTimeFormat('pt-BR', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+  }).format(date);
+  return formatted.replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function countRecentSessions(days = 7): number {
+  const limit = new Date();
+  limit.setDate(limit.getDate() - days);
+  return getSessions().filter(session => new Date(session.date) >= limit).length;
 }
 
 export default function HomePage() {
-  const [sessions, setSessions] = useState<(Session & { patient?: Patient })[]>([]);
-  const navigate = useNavigate();
+  const [patientsCount, setPatientsCount] = useState(0);
+  const [recentSessionsCount, setRecentSessionsCount] = useState(0);
 
   useEffect(() => {
-    loadSessions();
+    setPatientsCount(getPatients().length);
+    setRecentSessionsCount(countRecentSessions(7));
   }, []);
-
-  function loadSessions() {
-    const todaySessions = getTodaySessions()
-      .map(s => ({ ...s, patient: getPatient(s.patientId) }))
-      .sort((a, b) => a.time.localeCompare(b.time));
-    setSessions(todaySessions);
-  }
-
-  function handleStartSession(session: Session & { patient?: Patient }) {
-    if (!session.completed) {
-      updateSession(session.id, { completed: true });
-      loadSessions();
-    }
-    navigate(`/pacientes/${session.patientId}`);
-  }
 
   return (
     <div className="container max-w-2xl py-8 px-4 md:px-0">
-      {/* Greeting */}
-      <div className="animate-fade-in mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground leading-tight" style={{ lineHeight: '1.2' }}>
-          {getGreeting()}! 👋
+      <div className="animate-fade-in">
+        <p className="text-sm text-muted-foreground">{formatLongDate(new Date())}</p>
+        <h1 className="text-3xl md:text-4xl font-bold text-foreground mt-2" style={{ lineHeight: '1.15' }}>
+          Psicopedagogia
         </h1>
-        <p className="text-muted-foreground mt-1 text-base">
-          Aqui está sua agenda de hoje.
+        <p className="text-muted-foreground mt-2 text-base">
+          Gestão psicopedagógica de crianças autistas
         </p>
       </div>
 
-      {/* Today's Agenda */}
-      <div className="space-y-3">
-        {sessions.length === 0 ? (
-          <div className="animate-slide-up bg-card rounded-2xl p-8 text-center shadow-sm border">
-            <p className="text-muted-foreground text-lg font-medium">Nenhuma sessão agendada para hoje.</p>
-            <p className="text-muted-foreground text-sm mt-1">Use o botão + para cadastrar um paciente.</p>
+      <div className="grid grid-cols-2 gap-4 mt-7">
+        <div className="bg-[#eef5ff] border border-[#dfe9ff] rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-[#3b6eea] font-semibold text-sm">
+            <Users size={18} />
+            pacientes
           </div>
-        ) : (
-          sessions.map((session, i) => (
-            <div
-              key={session.id}
-              className="bg-card rounded-2xl p-5 shadow-sm border hover:shadow-md transition-shadow duration-300 cursor-pointer active:scale-[0.98]"
-              style={{ animation: `slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${i * 80}ms both` }}
-              onClick={() => handleStartSession(session)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm ${
-                    session.completed ? 'bg-success/10 text-success' : 'bg-primary/10 text-primary'
-                  }`}>
-                    {session.patient?.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-foreground">{session.patient?.name}</p>
-                    <div className="flex items-center gap-1.5 text-muted-foreground text-sm mt-0.5">
-                      <Clock size={14} />
-                      <span>{session.time}</span>
-                      {session.completed && (
-                        <span className="flex items-center gap-1 text-success ml-2">
-                          <CheckCircle2 size={14} />
-                          Concluída
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {!session.completed && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleStartSession(session);
-                    }}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity active:scale-95"
-                  >
-                    <Play size={14} />
-                    <span className="hidden sm:inline">Iniciar</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          ))
-        )}
+          <div className="mt-4 h-1 w-8 rounded-full bg-[#3b6eea]" />
+          <p className="mt-3 text-[#3b6eea] text-sm">{patientsCount} cadastrados</p>
+        </div>
+        <div className="bg-[#effbf2] border border-[#d9f3e3] rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-[#2b8a4b] font-semibold text-sm">
+            <CalendarDays size={18} />
+            Sessões
+          </div>
+          <div className="mt-4 h-1 w-8 rounded-full bg-[#2b8a4b]" />
+          <p className="mt-3 text-[#2b8a4b] text-sm">{recentSessionsCount} recentes</p>
+        </div>
       </div>
 
-      {/* Floating Action Button */}
-      <Link
-        to="/pacientes/novo"
-        className="fixed bottom-24 md:bottom-8 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-2xl shadow-lg hover:shadow-xl flex items-center justify-center transition-all duration-200 active:scale-90 z-40"
-        aria-label="Cadastrar novo paciente"
-      >
-        <Plus size={28} />
-      </Link>
+      <div className="mt-8">
+        <h2 className="text-lg font-bold text-foreground">Acesso Q</h2>
+        <div className="mt-4 space-y-3">
+          <Link
+            to="/pacientes/novo"
+            className="flex items-center justify-between bg-primary text-primary-foreground rounded-2xl p-4 shadow-lg shadow-primary/20 active:scale-[0.99] transition-transform"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary-foreground/15 flex items-center justify-center">
+                <Plus size={24} />
+              </div>
+              <div>
+                <p className="font-semibold">Novo Paciente</p>
+                <p className="text-sm opacity-90">Cadastrar nova criança</p>
+              </div>
+            </div>
+            <ArrowRight size={18} className="opacity-80" />
+          </Link>
+
+          <Link
+            to="/pacientes"
+            className="flex items-center justify-between bg-card rounded-2xl p-4 border shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#eef5ff] flex items-center justify-center text-[#3b6eea]">
+                <Users size={22} />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Ver Pacientes</p>
+                <p className="text-sm text-muted-foreground">Lista completa</p>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-muted-foreground" />
+          </Link>
+
+          <Link
+            to="/relatorios"
+            className="flex items-center justify-between bg-card rounded-2xl p-4 border shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#f1edff] flex items-center justify-center text-[#7a5ae6]">
+                <FileText size={22} />
+              </div>
+              <div>
+                <p className="font-semibold text-foreground">Relatórios</p>
+                <p className="text-sm text-muted-foreground">Gerar relatório profissional</p>
+              </div>
+            </div>
+            <ArrowRight size={18} className="text-muted-foreground" />
+          </Link>
+        </div>
+      </div>
+
+      {patientsCount === 0 && (
+        <div className="mt-10 text-center text-muted-foreground">
+          <Brain size={44} className="mx-auto mb-2 opacity-40" />
+          <p className="text-sm">nenhum paciente cadastrado</p>
+        </div>
+      )}
     </div>
   );
 }
