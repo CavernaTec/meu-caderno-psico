@@ -9,23 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   getAssessment, saveAssessment,
-  type AssessmentData, type IARStatus, type WritingLevel,
+  type AssessmentData, type WritingLevel,
 } from '@/lib/data';
-
-const IAR_FIELDS: { key: keyof AssessmentData['iar']; label: string }[] = [
-  { key: 'esquemaCorporal', label: 'Esquema Corporal' },
-  { key: 'lateralidade', label: 'Lateralidade' },
-  { key: 'orientacaoEspacialTemporal', label: 'Orientação Espacial / Temporal' },
-  { key: 'discriminacaoVisualAuditiva', label: 'Discriminação Visual / Auditiva' },
-  { key: 'coordenacaoVisomotora', label: 'Coordenação Visomotora' },
-  { key: 'memoria', label: 'Memória' },
-];
-
-const IAR_OPTIONS: { value: IARStatus; label: string; color: string }[] = [
-  { value: 'desenvolvido', label: 'Desenvolvido', color: 'bg-success/15 text-success border-success/30' },
-  { value: 'em_desenvolvimento', label: 'Em Desenvolvimento', color: 'bg-primary/15 text-primary border-primary/30' },
-  { value: 'dificuldade', label: 'Dificuldade', color: 'bg-destructive/15 text-destructive border-destructive/30' },
-];
+import IARInstrument from '@/components/tests/IARInstrument';
 
 const INSTRUMENT_FIELDS: { key: keyof AssessmentData['instruments']; label: string }[] = [
   { key: 'eoca', label: 'EOCA' },
@@ -54,10 +40,6 @@ export default function AssessmentsTab({ patientId }: { patientId: string }) {
   function handleSave() {
     saveAssessment(patientId, data);
     toast.success('Avaliação salva com sucesso!');
-  }
-
-  function updateIAR(key: keyof AssessmentData['iar'], value: IARStatus) {
-    setData(prev => ({ ...prev, iar: { ...prev.iar, [key]: value } }));
   }
 
   function updateInstrument(key: keyof AssessmentData['instruments'], field: 'applied' | 'result', value: any) {
@@ -93,25 +75,11 @@ export default function AssessmentsTab({ patientId }: { patientId: string }) {
             IAR — Instrumento de Avaliação do Repertório Básico
           </AccordionTrigger>
           <AccordionContent>
-            <div className="space-y-4 pb-2">
-              {IAR_FIELDS.map(({ key, label }) => (
-                <div key={key}>
-                  <p className="text-sm font-medium text-foreground mb-2">{label}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {IAR_OPTIONS.map(opt => (
-                      <button
-                        key={opt.value}
-                        onClick={() => updateIAR(key, data.iar[key] === opt.value ? '' : opt.value)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all active:scale-95 ${
-                          data.iar[key] === opt.value ? opt.color : 'bg-muted text-muted-foreground border-transparent'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="pb-2">
+              <IARInstrument
+                data={data.iarProtocol}
+                onChange={(iarProtocol) => setData(prev => ({ ...prev, iarProtocol }))}
+              />
             </div>
           </AccordionContent>
         </AccordionItem>

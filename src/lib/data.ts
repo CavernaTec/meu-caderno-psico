@@ -55,6 +55,13 @@ export interface IARData {
   memoria: IARStatus;
 }
 
+export type IARProtocolScore = 0 | 0.5 | 1;
+
+export interface IARProtocolData {
+  responses: Record<string, IARProtocolScore>;
+  updatedAt?: string;
+}
+
 export interface InstrumentRecord {
   applied: boolean;
   result: string;
@@ -80,6 +87,7 @@ export interface ProbesData {
 
 export interface AssessmentData {
   iar: IARData;
+  iarProtocol: IARProtocolData;
   instruments: InstrumentsData;
   probes: ProbesData;
   diagnosticHypothesis: string;
@@ -96,6 +104,9 @@ export function getDefaultAssessment(): AssessmentData {
       discriminacaoVisualAuditiva: '',
       coordenacaoVisomotora: '',
       memoria: '',
+    },
+    iarProtocol: {
+      responses: {},
     },
     instruments: {
       eoca: { ...EMPTY_INSTRUMENT },
@@ -116,7 +127,17 @@ const ASSESSMENT_KEY = 'ep_assessments';
 export function getAssessment(patientId: string): AssessmentData {
   try {
     const all = JSON.parse(localStorage.getItem(ASSESSMENT_KEY) || '{}');
-    return all[patientId] || getDefaultAssessment();
+    const stored = all[patientId];
+    if (!stored) return getDefaultAssessment();
+    const base = getDefaultAssessment();
+    return {
+      ...base,
+      ...stored,
+      iar: { ...base.iar, ...(stored.iar || {}) },
+      iarProtocol: stored.iarProtocol || base.iarProtocol,
+      instruments: { ...base.instruments, ...(stored.instruments || {}) },
+      probes: { ...base.probes, ...(stored.probes || {}) },
+    };
   } catch {
     return getDefaultAssessment();
   }

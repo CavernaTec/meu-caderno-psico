@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { getPatient, getNotes, getGoals, getABCRecords, getSessions, getAssessment, calculateAge, formatDate, getStatusLabel } from './data';
 import { getAllMedia } from './mediaStore';
+import { computeIARProfile } from './iarProtocol';
 import {
   getAllTestResults, PORTAGE_AREAS, EOCA_MODALIDADES,
   EOCA_TEMATICA, EOCA_DINAMICA, EOCA_PRODUTO,
@@ -76,19 +77,35 @@ export async function generatePatientReport(patientId: string, startDate?: strin
     em_desenvolvimento: 'Em Desenvolvimento',
     dificuldade: 'Dificuldade',
   };
+  const iarProtocolProfile = computeIARProfile(assessment.iarProtocol?.responses || {});
+  const hasIARProtocol = iarProtocolProfile.answered > 0;
   const hasIAR = Object.values(assessment.iar).some(v => v !== '');
   const hasInstruments = Object.values(assessment.instruments).some(v => v.applied);
   const hasProbes = assessment.probes.writingLevel || assessment.probes.mathNotes || assessment.probes.psychomotorNotes;
   const hasDiagnosis = assessment.diagnosticHypothesis.trim();
 
-  if (hasIAR || hasInstruments || hasProbes || hasDiagnosis) {
+  if (hasIARProtocol || hasIAR || hasInstruments || hasProbes || hasDiagnosis) {
     y += 4;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.text('Resultados da Avaliação e Sondagens', 14, y);
     y += 4;
 
-    if (hasIAR) {
+    if (hasIARProtocol) {
+      const iarRows = iarProtocolProfile.areas.map(area => [area.label, `${area.percentage}%`, area.status]);
+      if (iarRows.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Área (IAR)', 'Pontuação', 'Status']],
+          body: iarRows,
+          styles: { fontSize: 9, cellPadding: 3 },
+          headStyles: { fillColor: [100, 149, 200], textColor: 255 },
+          alternateRowStyles: { fillColor: [245, 247, 250] },
+          margin: { left: 14, right: 14 },
+        });
+        y = (doc as any).lastAutoTable.finalY + 8;
+      }
+    } else if (hasIAR) {
       const iarRows = Object.entries(assessment.iar)
         .filter(([, v]) => v !== '')
         .map(([k, v]) => [iarLabels[k] || k, iarStatusLabels[v] || v]);
