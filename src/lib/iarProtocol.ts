@@ -1,5 +1,10 @@
 export type IARProtocolScore = 0 | 0.5 | 1;
 
+export interface IARProtocolData {
+  responses: Record<string, IARProtocolScore>;
+  updatedAt?: string;
+}
+
 export type IARAreaKey =
   | 'cores'
   | 'esquemaCorporal'
