@@ -10,9 +10,10 @@ export default function SessionsTab({ patientId }: { patientId: string }) {
   const [time, setTime] = useState('08:00');
   const [notes, setNotes] = useState('');
 
-  function reload() {
+  async function reload() {
+    const list = await getSessions();
     setSessions(
-      getSessions()
+      list
         .filter(s => s.patientId === patientId)
         .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))
     );
@@ -20,13 +21,13 @@ export default function SessionsTab({ patientId }: { patientId: string }) {
 
   useEffect(() => { reload(); }, [patientId]);
 
-  function handleAdd() {
+  async function handleAdd() {
     if (!date || !time) {
       toast.error('Preencha data e horário.');
       return;
     }
-    saveSession({ patientId, date, time, notes, completed: false });
-    reload();
+    await saveSession({ patientId, date, time, notes, completed: false });
+    await reload();
     setDate(new Date().toISOString().split('T')[0]);
     setTime('08:00');
     setNotes('');
@@ -34,16 +35,16 @@ export default function SessionsTab({ patientId }: { patientId: string }) {
     toast.success('Sessão agendada!');
   }
 
-  function handleToggleComplete(session: Session) {
-    updateSession(session.id, { completed: !session.completed });
-    reload();
+  async function handleToggleComplete(session: Session) {
+    await updateSession(session.id, { completed: !session.completed });
+    await reload();
     toast.success(session.completed ? 'Sessão reaberta.' : 'Sessão concluída!');
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Remover esta sessão?')) return;
-    deleteSession(id);
-    reload();
+    await deleteSession(id);
+    await reload();
     toast.success('Sessão removida.');
   }
 
@@ -91,7 +92,8 @@ export default function SessionsTab({ patientId }: { patientId: string }) {
       )}
 
       {sessions.map(session => (
-        <div key={session.id} className={`bg-card border rounded-xl p-4 ${session.completed ? 'opacity-70' : ''}`}>
+        <div key={session.id} className={`relative bg-card border rounded-xl p-4 shadow-sm ${session.completed ? 'opacity-70' : ''}`}>
+          <span className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-emerald-400" />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <button
@@ -102,7 +104,7 @@ export default function SessionsTab({ patientId }: { patientId: string }) {
               >
                 {session.completed ? <CheckCircle2 size={18} /> : <Clock size={18} />}
               </button>
-              <div>
+              <div className="pl-2">
                 <p className="font-semibold text-foreground text-sm">{formatDate(session.date)}</p>
                 <p className="text-muted-foreground text-xs mt-0.5">
                   {session.time}

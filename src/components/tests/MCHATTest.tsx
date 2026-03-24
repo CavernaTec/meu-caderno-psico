@@ -7,9 +7,14 @@ import {
 } from '@/lib/testsData';
 
 export default function MCHATTest({ patientId }: { patientId: string }) {
-  const [data, setData] = useState<MCHATData>(() => getMCHATData(patientId));
+  const [data, setData] = useState<MCHATData>({ answers: {} });
 
-  useEffect(() => { setData(getMCHATData(patientId)); }, [patientId]);
+  useEffect(() => {
+    const load = async () => {
+      setData(await getMCHATData(patientId));
+    };
+    load();
+  }, [patientId]);
 
   const result = useMemo(() => calculateMCHATResult(data), [data]);
 
@@ -17,8 +22,8 @@ export default function MCHATTest({ patientId }: { patientId: string }) {
     setData(prev => ({ ...prev, answers: { ...prev.answers, [id]: value } }));
   }
 
-  function handleSave() {
-    saveMCHATData(patientId, data);
+  async function handleSave() {
+    await saveMCHATData(patientId, data);
     toast.success('M-CHAT-R salvo com sucesso!');
   }
 

@@ -10,7 +10,7 @@ import {
 } from './testsData';
 
 export async function generatePatientReport(patientId: string, startDate?: string, endDate?: string, preview?: boolean): Promise<boolean> {
-  const patient = getPatient(patientId);
+  const patient = await getPatient(patientId);
   if (!patient) return false;
 
   const doc = new jsPDF();
@@ -63,7 +63,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   }
 
   // Assessment Data
-  const assessment = getAssessment(patientId);
+  const assessment = await getAssessment(patientId);
   const iarLabels: Record<string, string> = {
     esquemaCorporal: 'Esquema Corporal',
     lateralidade: 'Lateralidade',
@@ -188,7 +188,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   }
 
   // ===== TEST RESULTS =====
-  const testResults = getAllTestResults(patientId);
+  const testResults = await getAllTestResults(patientId);
 
   // Portage
   const portageAnswered = Object.keys(testResults.portage.data.answers).filter(k => testResults.portage.data.answers[k] !== undefined).length;
@@ -336,7 +336,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   doc.text('Histórico de Sessões', 14, y);
   y += 4;
 
-  let sessions = getSessions()
+  let sessions = (await getSessions())
     .filter(s => s.patientId === patientId)
     .sort((a, b) => a.date.localeCompare(b.date));
   if (startDate) sessions = sessions.filter(s => s.date >= startDate);
@@ -373,7 +373,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   doc.text('Plano Terapêutico Individual (PTI)', 14, y);
   y += 4;
 
-  const goals = getGoals(patientId);
+  const goals = await getGoals(patientId);
   if (goals.length > 0) {
     autoTable(doc, {
       startY: y,
@@ -400,7 +400,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   doc.text('Notas de Evolução', 14, y);
   y += 8;
 
-  let notes = getNotes(patientId).sort((a, b) => b.date.localeCompare(a.date));
+  let notes = (await getNotes(patientId)).sort((a, b) => b.date.localeCompare(a.date));
   if (startDate) notes = notes.filter(n => n.date >= startDate);
   if (endDate) notes = notes.filter(n => n.date <= endDate);
 
@@ -430,7 +430,7 @@ export async function generatePatientReport(patientId: string, startDate?: strin
   doc.text('Registros de Comportamento (ABC)', 14, y);
   y += 4;
 
-  let abcRecords = getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date));
+  let abcRecords = (await getABCRecords(patientId)).sort((a, b) => b.date.localeCompare(a.date));
   if (startDate) abcRecords = abcRecords.filter(r => r.date >= startDate);
   if (endDate) abcRecords = abcRecords.filter(r => r.date <= endDate);
 

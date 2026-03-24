@@ -11,8 +11,8 @@
 
 @layer base {
   :root {
-    --background: 36 44% 96%;
-    --foreground: 18 18% 22%;
+    --background: 160 20% 96%;
+    --foreground: 210 16% 18%;
 
     --card: 0 0% 100%;
     --card-foreground: 18 18% 22%;
@@ -23,14 +23,14 @@
     --primary: 150 24% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 36 30% 92%;
-    --secondary-foreground: 18 18% 22%;
+    --secondary: 160 16% 92%;
+    --secondary-foreground: 210 16% 22%;
 
-    --muted: 36 24% 93%;
-    --muted-foreground: 22 10% 46%;
+    --muted: 160 12% 92%;
+    --muted-foreground: 210 12% 46%;
 
-    --accent: 220 65% 78%;
-    --accent-foreground: 220 35% 24%;
+    --accent: 200 65% 80%;
+    --accent-foreground: 210 30% 24%;
 
     --success: 150 30% 45%;
     --success-foreground: 0 0% 100%;
@@ -38,9 +38,9 @@
     --destructive: 15 60% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 210 60% 58%;
+    --border: 200 18% 88%;
+    --input: 200 18% 88%;
+    --ring: 200 60% 58%;
 
     --radius: 0.75rem;
 
@@ -63,6 +63,23 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Nunito', sans-serif;
+  }
+}
+
+.app-shell {
+  width: 100%;
+  max-width: 450px;
+  min-height: 100vh;
+  margin: 0 auto;
+  background: hsl(var(--background));
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    border-radius: 28px;
+    box-shadow: 0 18px 60px rgba(25, 50, 40, 0.12);
+    border: 1px solid rgba(120, 140, 135, 0.2);
+    overflow: hidden;
   }
 }
 

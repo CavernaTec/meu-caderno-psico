@@ -12,44 +12,27 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Desktop Header */}
-      <header className="hidden md:flex items-center justify-between px-8 py-4 bg-card border-b shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">EP</span>
+    <div className="min-h-screen bg-background">
+      <div className="app-shell">
+        <header className="px-4 pt-5 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center shadow-sm">
+              <span className="text-primary-foreground font-bold text-sm">EP</span>
+            </div>
+            <div>
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">App Clínico</p>
+              <h1 className="text-lg font-bold text-foreground leading-none">Evolução Psicopedagógica</h1>
+            </div>
           </div>
-          <span className="font-bold text-lg text-foreground tracking-tight">Evolução Psicopedagógica</span>
-        </div>
-        <nav className="flex gap-1">
-          {navItems.map(item => {
-            const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
-                  active
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-              >
-                <item.icon size={18} />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="flex-1 pb-24 md:pb-8">
-        {children}
-      </main>
+        <main className="flex-1 pb-24">
+          {children}
+        </main>
+      </div>
 
-      {/* Mobile Bottom Nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
-        <div className="flex justify-around py-2">
+      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)] z-50">
+        <div className="mx-auto flex max-w-[450px] justify-around py-2">
           {navItems.map(item => {
             const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
             return (

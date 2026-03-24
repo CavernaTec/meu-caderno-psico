@@ -10,9 +10,14 @@ import {
 } from '@/lib/testsData';
 
 export default function AutonomyTest({ patientId }: { patientId: string }) {
-  const [data, setData] = useState<AutonomyData>(() => getAutonomyData(patientId));
+  const [data, setData] = useState<AutonomyData>({ scores: {}, observacoes: '' });
 
-  useEffect(() => { setData(getAutonomyData(patientId)); }, [patientId]);
+  useEffect(() => {
+    const load = async () => {
+      setData(await getAutonomyData(patientId));
+    };
+    load();
+  }, [patientId]);
 
   const results = useMemo(() => calculateAutonomyResults(data), [data]);
   const categories = [...new Set(AUTONOMY_ITEMS.map(i => i.category))];
@@ -21,8 +26,8 @@ export default function AutonomyTest({ patientId }: { patientId: string }) {
     setData(prev => ({ ...prev, scores: { ...prev.scores, [itemId]: score } }));
   }
 
-  function handleSave() {
-    saveAutonomyData(patientId, data);
+  async function handleSave() {
+    await saveAutonomyData(patientId, data);
     toast.success('Avaliação de Autonomia salva!');
   }
 

@@ -31,28 +31,29 @@ export default function ABCTab({ patientId }: { patientId: string }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ antecedent: '', behavior: '', consequence: '' });
 
-  function reload() {
-    setRecords(getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+  async function reload() {
+    const records = await getABCRecords(patientId);
+    setRecords(records.sort((a, b) => b.date.localeCompare(a.date)));
   }
 
   useEffect(() => { reload(); }, [patientId]);
 
-  function handleSave() {
+  async function handleSave() {
     if (!form.antecedent || !form.behavior || !form.consequence) {
       toast.error('Preencha todos os campos.');
       return;
     }
-    saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...form });
-    reload();
+    await saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...form });
+    await reload();
     setForm({ antecedent: '', behavior: '', consequence: '' });
     setShowForm(false);
     toast.success('Registro salvo!');
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Remover este registro?')) return;
-    deleteABCRecord(id);
-    reload();
+    await deleteABCRecord(id);
+    await reload();
     toast.success('Registro removido.');
   }
 

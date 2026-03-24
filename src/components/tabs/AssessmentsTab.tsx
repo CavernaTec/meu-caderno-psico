@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import PortageTest from '@/components/tests/PortageTest';
 import IARInstrument from '@/components/tests/IARInstrument';
 import EOCAChecklist from '@/components/tests/EOCAChecklist';
 import AutonomyTest from '@/components/tests/AutonomyTest';
 import MCHATTest from '@/components/tests/MCHATTest';
 import CARSTest from '@/components/tests/CARSTest';
-import { getAssessment, saveAssessment } from '@/lib/data';
+import { getAssessment, saveAssessment, type AssessmentData } from '@/lib/data';
 
 const subTabs = [
   { id: 'portage', label: 'Portage' },
@@ -16,6 +16,14 @@ const subTabs = [
 
 export default function AssessmentsTab({ patientId }: { patientId: string }) {
   const [active, setActive] = useState('portage');
+  const [assessment, setAssessment] = useState<AssessmentData | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setAssessment(await getAssessment(patientId));
+    };
+    load();
+  }, [patientId]);
 
   return (
     <div className="space-y-4">
@@ -36,12 +44,13 @@ export default function AssessmentsTab({ patientId }: { patientId: string }) {
       </div>
 
       {active === 'portage' && <PortageTest patientId={patientId} />}
-      {active === 'iar' && (
+      {active === 'iar' && assessment && (
         <IARInstrument
-          data={getAssessment(patientId).iarProtocol}
-          onChange={(iarProtocol) => {
-            const assessment = getAssessment(patientId);
-            saveAssessment(patientId, { ...assessment, iarProtocol });
+          data={assessment.iarProtocol}
+          onChange={async (iarProtocol) => {
+            const next = { ...assessment, iarProtocol };
+            setAssessment(next);
+            await saveAssessment(patientId, next);
           }}
         />
       )}

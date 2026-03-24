@@ -2,22 +2,32 @@
 // Test Models, Storage & Scoring Logic
 // ============================================================
 
-// ---------- Generic Storage ----------
-const TESTS_KEY = 'ep_tests';
+import { dbGet, dbPut } from './localDb';
 
-function loadAllTests(): Record<string, Record<string, any>> {
-  try { return JSON.parse(localStorage.getItem(TESTS_KEY) || '{}'); } catch { return {}; }
+interface TestRecord {
+  id: string;
+  patientId: string;
+  testKey: string;
+  data: any;
 }
 
-function loadPatientTests(patientId: string): Record<string, any> {
-  return loadAllTests()[patientId] || {};
+function makeTestId(patientId: string, testKey: string) {
+  return `${patientId}:${testKey}`;
 }
 
-function savePatientTest(patientId: string, testKey: string, data: any) {
-  const all = loadAllTests();
-  if (!all[patientId]) all[patientId] = {};
-  all[patientId][testKey] = data;
-  localStorage.setItem(TESTS_KEY, JSON.stringify(all));
+async function loadPatientTest(patientId: string, testKey: string) {
+  const record = await dbGet<TestRecord>('tests', makeTestId(patientId, testKey));
+  return record?.data;
+}
+
+async function savePatientTest(patientId: string, testKey: string, data: any) {
+  const record: TestRecord = {
+    id: makeTestId(patientId, testKey),
+    patientId,
+    testKey,
+    data,
+  };
+  await dbPut('tests', record);
 }
 
 // ============================================================
@@ -235,12 +245,12 @@ export const PORTAGE_AREAS: PortageArea[] = [
 
 const AGE_RANGES = ['0-1', '1-2', '2-3', '3-4', '4-5', '5-6'];
 
-export function getPortageData(patientId: string): PortageData {
-  return loadPatientTests(patientId).portage || { answers: {} };
+export async function getPortageData(patientId: string): Promise<PortageData> {
+  return (await loadPatientTest(patientId, 'portage')) || { answers: {} };
 }
 
-export function savePortageData(patientId: string, data: PortageData) {
-  savePatientTest(patientId, 'portage', data);
+export async function savePortageData(patientId: string, data: PortageData) {
+  await savePatientTest(patientId, 'portage', data);
 }
 
 /** Calculate developmental age in months per area.
@@ -325,12 +335,12 @@ export const EOCA_MODALIDADES = [
   { value: 'hiperacomodativa', label: 'Hiperacomodação', desc: 'Predomínio da imitação, superestimulação da imitação. Pouca atividade lúdica e criatividade.' },
 ];
 
-export function getEOCAData(patientId: string): EOCAData {
-  return loadPatientTests(patientId).eoca || { tematica: {}, dinamica: {}, produto: {}, modalidade: '', observacoes: '', conclusao: '' };
+export async function getEOCAData(patientId: string): Promise<EOCAData> {
+  return (await loadPatientTest(patientId, 'eoca')) || { tematica: {}, dinamica: {}, produto: {}, modalidade: '', observacoes: '', conclusao: '' };
 }
 
-export function saveEOCAData(patientId: string, data: EOCAData) {
-  savePatientTest(patientId, 'eoca', data);
+export async function saveEOCAData(patientId: string, data: EOCAData) {
+  await savePatientTest(patientId, 'eoca', data);
 }
 
 // ============================================================
@@ -382,12 +392,12 @@ export const AUTONOMY_ITEMS: AutonomyItem[] = [
   { id: 'hs5', text: 'Respeita regras em grupo', category: 'Habilidades Sociais' },
 ];
 
-export function getAutonomyData(patientId: string): AutonomyData {
-  return loadPatientTests(patientId).autonomy || { scores: {}, observacoes: '' };
+export async function getAutonomyData(patientId: string): Promise<AutonomyData> {
+  return (await loadPatientTest(patientId, 'autonomy')) || { scores: {}, observacoes: '' };
 }
 
-export function saveAutonomyData(patientId: string, data: AutonomyData) {
-  savePatientTest(patientId, 'autonomy', data);
+export async function saveAutonomyData(patientId: string, data: AutonomyData) {
+  await savePatientTest(patientId, 'autonomy', data);
 }
 
 export function calculateAutonomyResults(data: AutonomyData) {
@@ -444,12 +454,12 @@ export const MCHAT_QUESTIONS: MCHATQuestion[] = [
   { id: 'mc23', text: 'A criança faz gestos (ex: dar tchau, mandar beijo)?', critical: false, reverseScored: false },
 ];
 
-export function getMCHATData(patientId: string): MCHATData {
-  return loadPatientTests(patientId).mchat || { answers: {} };
+export async function getMCHATData(patientId: string): Promise<MCHATData> {
+  return (await loadPatientTest(patientId, 'mchat')) || { answers: {} };
 }
 
-export function saveMCHATData(patientId: string, data: MCHATData) {
-  savePatientTest(patientId, 'mchat', data);
+export async function saveMCHATData(patientId: string, data: MCHATData) {
+  await savePatientTest(patientId, 'mchat', data);
 }
 
 export function calculateMCHATResult(data: MCHATData) {
@@ -501,12 +511,12 @@ export const CARS_ITEMS: CARSItem[] = [
   { id: 'cars15', label: 'Impressão geral' },
 ];
 
-export function getCARSData(patientId: string): CARSData {
-  return loadPatientTests(patientId).cars || { scores: {} };
+export async function getCARSData(patientId: string): Promise<CARSData> {
+  return (await loadPatientTest(patientId, 'cars')) || { scores: {} };
 }
 
-export function saveCARSData(patientId: string, data: CARSData) {
-  savePatientTest(patientId, 'cars', data);
+export async function saveCARSData(patientId: string, data: CARSData) {
+  await savePatientTest(patientId, 'cars', data);
 }
 
 export function calculateCARSResult(data: CARSData) {
@@ -529,12 +539,12 @@ export function calculateCARSResult(data: CARSData) {
 // ============================================================
 // Consolidated results for PDF
 // ============================================================
-export function getAllTestResults(patientId: string) {
-  const portage = getPortageData(patientId);
-  const eoca = getEOCAData(patientId);
-  const autonomy = getAutonomyData(patientId);
-  const mchat = getMCHATData(patientId);
-  const cars = getCARSData(patientId);
+export async function getAllTestResults(patientId: string) {
+  const portage = await getPortageData(patientId);
+  const eoca = await getEOCAData(patientId);
+  const autonomy = await getAutonomyData(patientId);
+  const mchat = await getMCHATData(patientId);
+  const cars = await getCARSData(patientId);
 
   return {
     portage: { data: portage, results: calculatePortageResults(portage) },

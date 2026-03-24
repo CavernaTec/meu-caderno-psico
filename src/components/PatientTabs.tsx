@@ -3,12 +3,14 @@ import CadastroTab from './tabs/CadastroTab';
 import AssessmentsTab from './tabs/AssessmentsTab';
 import PTITab from './tabs/PTITab';
 import EvolutionTab from './tabs/EvolutionTab';
+import MediaTab from './tabs/MediaTab';
 
 const tabs = [
   { id: 'cadastro', label: 'Cadastro' },
   { id: 'avaliacoes', label: 'Avaliações' },
   { id: 'pti', label: 'PTI' },
   { id: 'evolucao', label: 'Evolução' },
+  { id: 'midia', label: 'Mídia' },
 ];
 
 export default function PatientTabs({ patientId }: { patientId: string }) {
@@ -16,12 +18,12 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
 
   return (
     <div className="animate-slide-up">
-      <div className="flex bg-muted p-1 rounded-xl mb-6">
+      <div className="flex bg-muted p-1 rounded-xl mb-6 overflow-x-auto">
         {tabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActive(tab.id)}
-            className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-[0.97] ${
+            className={`px-3 py-2.5 text-sm font-semibold rounded-lg transition-all duration-200 active:scale-[0.97] whitespace-nowrap ${
               active === tab.id
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -36,6 +38,7 @@ export default function PatientTabs({ patientId }: { patientId: string }) {
       {active === 'avaliacoes' && <AssessmentsTab patientId={patientId} />}
       {active === 'pti' && <PTITab patientId={patientId} />}
       {active === 'evolucao' && <EvolutionTab patientId={patientId} />}
+      {active === 'midia' && <MediaTab patientId={patientId} />}
     </div>
   );
 }

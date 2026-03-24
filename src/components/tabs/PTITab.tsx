@@ -3,119 +3,131 @@ import { Plus, Target, Trash2 } from 'lucide-react';
 import { getGoals, saveGoal, updateGoal, deleteGoal, getStatusLabel, getStatusColor, type PTIGoal } from '@/lib/data';
 import { toast } from 'sonner';
 
-const AREAS = ['Comunicação', 'Social', 'Motor', 'Cognitivo', 'Autonomia', 'Comportamental', 'Outro'];
+const AREAS = ['Comunicação', 'Social', 'Motricidade', 'Cognitivo', 'Autonomia', 'Comportamental'];
 const STATUSES: PTIGoal['status'][] = ['not_started', 'in_progress', 'completed'];
 
 export default function PTITab({ patientId }: { patientId: string }) {
   const [goals, setGoals] = useState<PTIGoal[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [newGoal, setNewGoal] = useState({ area: AREAS[0], description: '', customArea: '' });
+  const [customInputs, setCustomInputs] = useState<Record<string, string>>({});
+  const [openInputs, setOpenInputs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    setGoals(getGoals(patientId));
+    const load = async () => {
+      const list = await getGoals(patientId);
+      setGoals(list);
+    };
+    load();
   }, [patientId]);
 
-  function handleAdd() {
-    if (!newGoal.description.trim()) return;
-    const areaName = newGoal.area === 'Outro' ? (newGoal.customArea.trim() || 'Outro') : newGoal.area;
-    if (newGoal.area === 'Outro' && !newGoal.customArea.trim()) {
-      toast.error('Digite o nome da categoria personalizada.');
+  async function handleAdd(area: string) {
+    const description = (customInputs[area] || '').trim();
+    if (!description) {
+      toast.error('Digite a meta antes de salvar.');
       return;
     }
-    saveGoal({ patientId, area: areaName, description: newGoal.description, status: 'not_started', progress: 0 });
-    setGoals(getGoals(patientId));
-    setNewGoal({ area: AREAS[0], description: '', customArea: '' });
-    setShowForm(false);
+    await saveGoal({ patientId, area, description, status: 'not_started', progress: 0 });
+    setGoals(await getGoals(patientId));
+    setCustomInputs(prev => ({ ...prev, [area]: '' }));
+    setOpenInputs(prev => ({ ...prev, [area]: false }));
     toast.success('Meta adicionada!');
   }
 
-  function cycleStatus(goal: PTIGoal) {
+  async function cycleStatus(goal: PTIGoal) {
     const idx = STATUSES.indexOf(goal.status);
     const nextStatus = STATUSES[(idx + 1) % STATUSES.length];
     const progress = nextStatus === 'completed' ? 100 : nextStatus === 'in_progress' ? 50 : 0;
-    updateGoal(goal.id, { status: nextStatus, progress });
-    setGoals(getGoals(patientId));
+    await updateGoal(goal.id, { status: nextStatus, progress });
+    setGoals(await getGoals(patientId));
   }
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Remover esta meta?')) return;
-    deleteGoal(id);
-    setGoals(getGoals(patientId));
+    await deleteGoal(id);
+    setGoals(await getGoals(patientId));
     toast.success('Meta removida.');
   }
 
+  const areaList = [...AREAS, ...new Set(goals.map(goal => goal.area).filter(area => !AREAS.includes(area)))];
+
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between mb-2">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
         <h2 className="font-bold text-foreground">Plano Terapêutico</h2>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1.5 text-primary text-sm font-semibold hover:opacity-80 active:scale-95 transition-all">
-          <Plus size={16} /> Nova Meta
-        </button>
       </div>
 
-      {showForm && (
-        <div className="bg-card border rounded-xl p-4 space-y-3">
-          <select
-            value={newGoal.area}
-            onChange={e => setNewGoal(g => ({ ...g, area: e.target.value }))}
-            className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
-          >
-             {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-           </select>
-           {newGoal.area === 'Outro' && (
-             <input
-               placeholder="Nome da categoria personalizada..."
-               value={newGoal.customArea}
-               onChange={e => setNewGoal(g => ({ ...g, customArea: e.target.value }))}
-               className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
-             />
-           )}
-          <input
-            placeholder="Descreva a meta..."
-            value={newGoal.description}
-            onChange={e => setNewGoal(g => ({ ...g, description: e.target.value }))}
-            className="w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none"
-          />
-          <button onClick={handleAdd} className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-semibold active:scale-[0.98]">
-            Salvar Meta
-          </button>
-        </div>
-      )}
-
-      {goals.length === 0 && !showForm && (
+      {goals.length === 0 && (
         <div className="text-center py-8 text-muted-foreground">
           <Target size={32} className="mx-auto mb-2 opacity-40" />
           <p className="text-sm">Nenhuma meta cadastrada ainda.</p>
         </div>
       )}
 
-      {goals.map(goal => (
-        <div key={goal.id} className="bg-card border rounded-xl p-4">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-md">{goal.area}</span>
-              <p className="text-sm text-foreground mt-1.5 font-medium">{goal.description}</p>
-            </div>
-            <div className="flex items-center gap-1.5">
+      {areaList.map(area => {
+        const areaGoals = goals.filter(goal => goal.area === area);
+        return (
+          <div key={area} className="bg-card border rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-sm font-semibold text-foreground">{area}</div>
               <button
-                onClick={() => cycleStatus(goal)}
-                className={`text-xs font-semibold px-2.5 py-1 rounded-lg transition-colors active:scale-95 ${getStatusColor(goal.status)}`}
+                onClick={() => setOpenInputs(prev => ({ ...prev, [area]: !prev[area] }))}
+                className="flex items-center gap-1.5 text-primary text-xs font-semibold hover:opacity-80 active:scale-95"
               >
-                {getStatusLabel(goal.status)}
-              </button>
-              <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
-                <Trash2 size={14} />
+                <Plus size={14} /> Outro
               </button>
             </div>
+
+            {openInputs[area] && (
+              <div className="bg-muted/40 rounded-xl p-3 space-y-2 mb-3">
+                <input
+                  placeholder="Descreva a meta personalizada..."
+                  value={customInputs[area] || ''}
+                  onChange={e => setCustomInputs(prev => ({ ...prev, [area]: e.target.value }))}
+                  className="w-full px-3 py-2.5 bg-card border rounded-lg text-sm focus:outline-none"
+                />
+                <button
+                  onClick={() => handleAdd(area)}
+                  className="w-full bg-primary text-primary-foreground py-2 rounded-lg text-sm font-semibold active:scale-[0.98]"
+                >
+                  Salvar Meta
+                </button>
+              </div>
+            )}
+
+            {areaGoals.length === 0 && !openInputs[area] && (
+              <p className="text-xs text-muted-foreground">Nenhuma meta nesta categoria.</p>
+            )}
+
+            <div className="space-y-2">
+              {areaGoals.map(goal => (
+                <div key={goal.id} className="border border-border/60 rounded-xl p-3">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <p className="text-sm text-foreground font-medium">{goal.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => cycleStatus(goal)}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-colors active:scale-95 ${getStatusColor(goal.status)}`}
+                      >
+                        {getStatusLabel(goal.status)}
+                      </button>
+                      <button onClick={() => handleDelete(goal.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${goal.status === 'completed' ? 'bg-success' : 'bg-primary'}`}
+                      style={{ width: `${goal.progress}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${goal.status === 'completed' ? 'bg-success' : 'bg-primary'}`}
-              style={{ width: `${goal.progress}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

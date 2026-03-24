@@ -14,13 +14,13 @@ export default function NewPatientPage() {
     phone: '',
   });
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.name.trim() || !form.birthDate) {
       toast.error('Preencha ao menos o nome e a data de nascimento.');
       return;
     }
-    const patient = savePatient(form);
+    const patient = await savePatient(form);
     toast.success('Paciente cadastrado com sucesso!');
     navigate(`/pacientes/${patient.id}`);
   }
@@ -28,7 +28,7 @@ export default function NewPatientPage() {
   const inputClass = "w-full px-4 py-3 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow";
 
   return (
-    <div className="container max-w-lg py-8 px-4 md:px-0">
+    <div className="px-4 pb-6">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors active:scale-95">
         <ArrowLeft size={18} />
         <span className="text-sm font-semibold">Voltar</span>

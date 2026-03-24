@@ -9,15 +9,18 @@ export default function CadastroTab({ patientId }: { patientId: string }) {
   const [form, setForm] = useState({ name: '', birthDate: '', cid: '', parentNames: '', phone: '' });
 
   useEffect(() => {
-    const p = getPatient(patientId);
-    setPatient(p);
-    if (p) setForm({ name: p.name, birthDate: p.birthDate, cid: p.cid, parentNames: p.parentNames, phone: p.phone });
+    const load = async () => {
+      const p = await getPatient(patientId);
+      setPatient(p);
+      if (p) setForm({ name: p.name, birthDate: p.birthDate, cid: p.cid, parentNames: p.parentNames, phone: p.phone });
+    };
+    load();
   }, [patientId]);
 
   if (!patient) return null;
 
-  function handleSave() {
-    updatePatient(patientId, form);
+  async function handleSave() {
+    await updatePatient(patientId, form);
     setPatient({ ...patient!, ...form });
     setEditing(false);
     toast.success('Dados atualizados!');

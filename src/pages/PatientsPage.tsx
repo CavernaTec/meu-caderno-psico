@@ -8,7 +8,10 @@ export default function PatientsPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    setPatients(getPatients());
+    const load = async () => {
+      setPatients(await getPatients());
+    };
+    load();
   }, []);
 
   const filtered = patients.filter(p =>
@@ -17,7 +20,7 @@ export default function PatientsPage() {
   );
 
   return (
-    <div className="container max-w-2xl py-8 px-4 md:px-0">
+    <div className="px-4 pb-6">
       <div className="flex items-center justify-between animate-fade-in mb-6">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Pacientes</h1>
@@ -54,10 +57,11 @@ export default function PatientsPage() {
             <Link
               key={patient.id}
               to={`/pacientes/${patient.id}`}
-              className="flex items-center justify-between bg-card rounded-2xl p-4 border hover:shadow-md transition-shadow duration-300 active:scale-[0.98]"
+              className="relative flex items-center justify-between bg-card rounded-2xl p-4 border shadow-sm hover:shadow-md transition-shadow duration-300 active:scale-[0.98]"
               style={{ animation: `slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${i * 60}ms both` }}
             >
-              <div className="flex items-center gap-3">
+              <span className="absolute left-0 top-4 bottom-4 w-1 rounded-full bg-sky-400" />
+              <div className="flex items-center gap-3 pl-2">
                 <div className="w-11 h-11 rounded-full bg-accent/20 text-accent-foreground flex items-center justify-center">
                   <Brain size={20} />
                 </div>

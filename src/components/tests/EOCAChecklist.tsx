@@ -12,9 +12,14 @@ import {
 } from '@/lib/testsData';
 
 export default function EOCAChecklist({ patientId }: { patientId: string }) {
-  const [data, setData] = useState<EOCAData>(() => getEOCAData(patientId));
+  const [data, setData] = useState<EOCAData>({ tematica: {}, dinamica: {}, produto: {}, modalidade: '', observacoes: '', conclusao: '' });
 
-  useEffect(() => { setData(getEOCAData(patientId)); }, [patientId]);
+  useEffect(() => {
+    const load = async () => {
+      setData(await getEOCAData(patientId));
+    };
+    load();
+  }, [patientId]);
 
   function toggleCheck(section: 'tematica' | 'dinamica' | 'produto', id: string) {
     setData(prev => ({
@@ -23,8 +28,8 @@ export default function EOCAChecklist({ patientId }: { patientId: string }) {
     }));
   }
 
-  function handleSave() {
-    saveEOCAData(patientId, data);
+  async function handleSave() {
+    await saveEOCAData(patientId, data);
     toast.success('EOCA salva com sucesso!');
   }
 

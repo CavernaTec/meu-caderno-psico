@@ -1,4 +1,5 @@
 import { deleteAllPatientMedia } from './mediaStore';
+import { dbGet, dbGetAll, dbGetAllByIndex, dbPut, dbDelete } from './localDb';
 
 export interface Patient {
   id: string;
@@ -93,6 +94,11 @@ export interface AssessmentData {
   diagnosticHypothesis: string;
 }
 
+interface AssessmentRecord {
+  patientId: string;
+  data: AssessmentData;
+}
+
 const EMPTY_INSTRUMENT: InstrumentRecord = { applied: false, result: '' };
 
 export function getDefaultAssessment(): AssessmentData {
@@ -122,175 +128,149 @@ export function getDefaultAssessment(): AssessmentData {
   };
 }
 
-const ASSESSMENT_KEY = 'ep_assessments';
-
-export function getAssessment(patientId: string): AssessmentData {
-  try {
-    const all = JSON.parse(localStorage.getItem(ASSESSMENT_KEY) || '{}');
-    const stored = all[patientId];
-    if (!stored) return getDefaultAssessment();
-    const base = getDefaultAssessment();
-    return {
-      ...base,
-      ...stored,
-      iar: { ...base.iar, ...(stored.iar || {}) },
-      iarProtocol: stored.iarProtocol || base.iarProtocol,
-      instruments: { ...base.instruments, ...(stored.instruments || {}) },
-      probes: { ...base.probes, ...(stored.probes || {}) },
-    };
-  } catch {
-    return getDefaultAssessment();
-  }
+export async function getAssessment(patientId: string): Promise<AssessmentData> {
+  const record = await dbGet<AssessmentRecord>('assessments', patientId);
+  const stored = record?.data;
+  if (!stored) return getDefaultAssessment();
+  const base = getDefaultAssessment();
+  return {
+    ...base,
+    ...stored,
+    iar: { ...base.iar, ...(stored.iar || {}) },
+    iarProtocol: stored.iarProtocol || base.iarProtocol,
+    instruments: { ...base.instruments, ...(stored.instruments || {}) },
+    probes: { ...base.probes, ...(stored.probes || {}) },
+  };
 }
 
-export function saveAssessment(patientId: string, data: AssessmentData) {
-  try {
-    const all = JSON.parse(localStorage.getItem(ASSESSMENT_KEY) || '{}');
-    all[patientId] = data;
-    localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(all));
-  } catch {
-    const obj: Record<string, AssessmentData> = {};
-    obj[patientId] = data;
-    localStorage.setItem(ASSESSMENT_KEY, JSON.stringify(obj));
-  }
+export async function saveAssessment(patientId: string, data: AssessmentData) {
+  await dbPut<AssessmentRecord>('assessments', { patientId, data });
 }
 
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
-const STORAGE_KEYS = {
-  patients: 'ep_patients',
-  sessions: 'ep_sessions',
-  goals: 'ep_goals',
-  notes: 'ep_notes',
-  abc: 'ep_abc',
-};
-
-function load<T>(key: string): T[] {
-  try {
-    return JSON.parse(localStorage.getItem(key) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function save<T>(key: string, data: T[]) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
-
 // Patients
-export function getPatients(): Patient[] {
-  return load<Patient>(STORAGE_KEYS.patients);
+export async function getPatients(): Promise<Patient[]> {
+  return dbGetAll<Patient>('patients');
 }
 
-export function getPatient(id: string): Patient | undefined {
-  return getPatients().find(p => p.id === id);
+export async function getPatient(id: string): Promise<Patient | undefined> {
+  return dbGet<Patient>('patients', id);
 }
 
-export function savePatient(patient: Omit<Patient, 'id' | 'createdAt'>): Patient {
-  const patients = getPatients();
+export async function savePatient(patient: Omit<Patient, 'id' | 'createdAt'>): Promise<Patient> {
   const newPatient: Patient = { ...patient, id: generateId(), createdAt: new Date().toISOString() };
-  patients.push(newPatient);
-  save(STORAGE_KEYS.patients, patients);
+  await dbPut('patients', newPatient);
   return newPatient;
 }
 
-export function updatePatient(id: string, data: Partial<Patient>) {
-  const patients = getPatients().map(p => p.id === id ? { ...p, ...data } : p);
-  save(STORAGE_KEYS.patients, patients);
+export async function updatePatient(id: string, data: Partial<Patient>) {
+  const existing = await dbGet<Patient>('patients', id);
+  if (!existing) return;
+  await dbPut('patients', { ...existing, ...data });
 }
 
-export function deletePatient(id: string) {
-  save(STORAGE_KEYS.patients, getPatients().filter(p => p.id !== id));
-  save(STORAGE_KEYS.sessions, load<Session>(STORAGE_KEYS.sessions).filter(s => s.patientId !== id));
-  save(STORAGE_KEYS.goals, load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.patientId !== id));
-  save(STORAGE_KEYS.notes, load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.patientId !== id));
-  save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.patientId !== id));
-  deleteAllPatientMedia(id);
+export async function deletePatient(id: string) {
+  await dbDelete('patients', id);
+
+  const sessions = await dbGetAllByIndex<Session>('sessions', 'patientId', id);
+  await Promise.all(sessions.map(s => dbDelete('sessions', s.id)));
+
+  const goals = await dbGetAllByIndex<PTIGoal>('goals', 'patientId', id);
+  await Promise.all(goals.map(g => dbDelete('goals', g.id)));
+
+  const notes = await dbGetAllByIndex<EvolutionNote>('notes', 'patientId', id);
+  await Promise.all(notes.map(n => dbDelete('notes', n.id)));
+
+  const abcs = await dbGetAllByIndex<ABCRecord>('abc', 'patientId', id);
+  await Promise.all(abcs.map(r => dbDelete('abc', r.id)));
+
+  await dbDelete('assessments', id);
+
+  const tests = await dbGetAllByIndex<{ id: string }>('tests', 'patientId', id);
+  await Promise.all(tests.map(t => dbDelete('tests', t.id)));
+
+  await deleteAllPatientMedia(id);
 }
 
 // Sessions
-export function getSessions(): Session[] {
-  return load<Session>(STORAGE_KEYS.sessions);
+export async function getSessions(): Promise<Session[]> {
+  return dbGetAll<Session>('sessions');
 }
 
-export function getTodaySessions(): Session[] {
+export async function getTodaySessions(): Promise<Session[]> {
   const today = new Date().toISOString().split('T')[0];
-  return getSessions().filter(s => s.date === today);
+  const sessions = await getSessions();
+  return sessions.filter(s => s.date === today);
 }
 
-export function saveSession(session: Omit<Session, 'id'>): Session {
-  const sessions = getSessions();
+export async function saveSession(session: Omit<Session, 'id'>): Promise<Session> {
   const newSession: Session = { ...session, id: generateId() };
-  sessions.push(newSession);
-  save(STORAGE_KEYS.sessions, sessions);
+  await dbPut('sessions', newSession);
   return newSession;
 }
 
-export function updateSession(id: string, data: Partial<Session>) {
-  const sessions = getSessions().map(s => s.id === id ? { ...s, ...data } : s);
-  save(STORAGE_KEYS.sessions, sessions);
+export async function updateSession(id: string, data: Partial<Session>) {
+  const existing = await dbGet<Session>('sessions', id);
+  if (!existing) return;
+  await dbPut('sessions', { ...existing, ...data });
 }
 
-export function deleteSession(id: string) {
-  save(STORAGE_KEYS.sessions, getSessions().filter(s => s.id !== id));
+export async function deleteSession(id: string) {
+  await dbDelete('sessions', id);
 }
 
 // PTI Goals
-export function getGoals(patientId: string): PTIGoal[] {
-  return load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.patientId === patientId);
+export async function getGoals(patientId: string): Promise<PTIGoal[]> {
+  return dbGetAllByIndex<PTIGoal>('goals', 'patientId', patientId);
 }
 
-export function saveGoal(goal: Omit<PTIGoal, 'id'>): PTIGoal {
-  const goals = load<PTIGoal>(STORAGE_KEYS.goals);
+export async function saveGoal(goal: Omit<PTIGoal, 'id'>): Promise<PTIGoal> {
   const newGoal: PTIGoal = { ...goal, id: generateId() };
-  goals.push(newGoal);
-  save(STORAGE_KEYS.goals, goals);
+  await dbPut('goals', newGoal);
   return newGoal;
 }
 
-export function updateGoal(id: string, data: Partial<PTIGoal>) {
-  const goals = load<PTIGoal>(STORAGE_KEYS.goals).map(g => g.id === id ? { ...g, ...data } : g);
-  save(STORAGE_KEYS.goals, goals);
+export async function updateGoal(id: string, data: Partial<PTIGoal>) {
+  const existing = await dbGet<PTIGoal>('goals', id);
+  if (!existing) return;
+  await dbPut('goals', { ...existing, ...data });
 }
 
-export function deleteGoal(id: string) {
-  save(STORAGE_KEYS.goals, load<PTIGoal>(STORAGE_KEYS.goals).filter(g => g.id !== id));
+export async function deleteGoal(id: string) {
+  await dbDelete('goals', id);
 }
 
 // Evolution Notes
-export function getNotes(patientId: string): EvolutionNote[] {
-  return load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.patientId === patientId);
+export async function getNotes(patientId: string): Promise<EvolutionNote[]> {
+  return dbGetAllByIndex<EvolutionNote>('notes', 'patientId', patientId);
 }
 
-export function saveNote(note: Omit<EvolutionNote, 'id'>): EvolutionNote {
-  const notes = load<EvolutionNote>(STORAGE_KEYS.notes);
+export async function saveNote(note: Omit<EvolutionNote, 'id'>): Promise<EvolutionNote> {
   const newNote: EvolutionNote = { ...note, id: generateId() };
-  notes.push(newNote);
-  save(STORAGE_KEYS.notes, notes);
+  await dbPut('notes', newNote);
   return newNote;
 }
 
-export function deleteNote(id: string) {
-  save(STORAGE_KEYS.notes, load<EvolutionNote>(STORAGE_KEYS.notes).filter(n => n.id !== id));
+export async function deleteNote(id: string) {
+  await dbDelete('notes', id);
 }
 
 // ABC Records
-export function getABCRecords(patientId: string): ABCRecord[] {
-  return load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.patientId === patientId);
+export async function getABCRecords(patientId: string): Promise<ABCRecord[]> {
+  return dbGetAllByIndex<ABCRecord>('abc', 'patientId', patientId);
 }
 
-export function saveABCRecord(record: Omit<ABCRecord, 'id'>): ABCRecord {
-  const records = load<ABCRecord>(STORAGE_KEYS.abc);
+export async function saveABCRecord(record: Omit<ABCRecord, 'id'>): Promise<ABCRecord> {
   const newRecord: ABCRecord = { ...record, id: generateId() };
-  records.push(newRecord);
-  save(STORAGE_KEYS.abc, records);
+  await dbPut('abc', newRecord);
   return newRecord;
 }
 
-export function deleteABCRecord(id: string) {
-  save(STORAGE_KEYS.abc, load<ABCRecord>(STORAGE_KEYS.abc).filter(r => r.id !== id));
+export async function deleteABCRecord(id: string) {
+  await dbDelete('abc', id);
 }
 
 

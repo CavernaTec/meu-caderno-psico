@@ -12,7 +12,10 @@ export default function ReportsPage() {
   const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
-    setPatients(getPatients());
+    const load = async () => {
+      setPatients(await getPatients());
+    };
+    load();
   }, []);
 
   async function handleGenerate(preview = false) {
@@ -39,7 +42,7 @@ export default function ReportsPage() {
   const inputClass = "w-full px-4 py-3 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow";
 
   return (
-    <div className="container max-w-lg py-8 px-4 md:px-0">
+    <div className="px-4 pb-6">
       <div className="animate-fade-in mb-6">
         <h1 className="text-2xl font-bold text-foreground" style={{ lineHeight: '1.2' }}>Relatórios</h1>
         <p className="text-muted-foreground text-sm mt-1">Gere relatórios profissionais em PDF.</p>

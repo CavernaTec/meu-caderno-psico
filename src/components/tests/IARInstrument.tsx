@@ -157,8 +157,8 @@ export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
       <div className="grid gap-4 lg:grid-cols-[1.4fr_0.8fr]">
         <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
           <p className="text-xs font-medium text-muted-foreground">Área da Criança</p>
-          <div className="mt-4 flex min-h-[280px] items-center justify-center rounded-2xl bg-muted/40 p-4">
-            <VisualBoard visual={step.visual} />
+          <div className="mt-4 flex min-h-[280px] items-center justify-center rounded-2xl bg-muted/40 p-4" style={{ animation: 'fadeIn 0.35s ease' }}>
+            <VisualBoard key={step.id} visual={step.visual} />
           </div>
         </div>
 
@@ -264,6 +264,23 @@ function VisualBoard({ visual }: { visual: IARVisualConfig }) {
     );
   }
 
+  if (visual.type === 'auditiva-list') {
+    return (
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div className="flex flex-wrap justify-center gap-2">
+          {visual.words.map(word => (
+            <span key={word} className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-foreground shadow-sm">
+              {word}
+            </span>
+          ))}
+        </div>
+        {visual.note ? (
+          <span className="text-xs font-medium text-muted-foreground">{visual.note}</span>
+        ) : null}
+      </div>
+    );
+  }
+
   return <AnalysisBoard missing={visual.missing} />;
 }
 
@@ -288,17 +305,19 @@ function BodyMap({ focus }: { focus: 'cabeca' | 'olhos' | 'boca' | 'ombro' | 'jo
 }
 
 function LateralityBoard({ target }: { target: 'direita' | 'esquerda' }) {
-  const active = 'bg-emerald-500/20 border-emerald-500/40';
+  const active = 'bg-emerald-500/15 border-emerald-500/40';
   const muted = 'bg-white/80 border-transparent';
   return (
     <div className="grid grid-cols-2 gap-4">
       <div className={`rounded-2xl border p-4 text-center ${target === 'esquerda' ? active : muted}`}>
-        <div className="mx-auto h-16 w-16 rounded-2xl bg-emerald-500/30" />
+        <TreeIllustration />
         <p className="mt-2 text-xs font-semibold text-muted-foreground">Esquerda</p>
+        <p className="text-[11px] text-muted-foreground">Árvore</p>
       </div>
       <div className={`rounded-2xl border p-4 text-center ${target === 'direita' ? active : muted}`}>
-        <div className="mx-auto h-16 w-16 rounded-2xl bg-sky-500/30" />
+        <CarIllustration />
         <p className="mt-2 text-xs font-semibold text-muted-foreground">Direita</p>
+        <p className="text-[11px] text-muted-foreground">Carro</p>
       </div>
     </div>
   );
@@ -306,16 +325,52 @@ function LateralityBoard({ target }: { target: 'direita' | 'esquerda' }) {
 
 function PositionBoard({ relation }: { relation: 'em_cima' | 'embaixo' | 'dentro' | 'ao_lado' | 'frente' | 'atras' }) {
   const base = 'rounded-2xl border border-dashed border-neutral-300 bg-white/80';
+  const cat = <CatIllustration />;
+  const vase = <VaseIllustration />;
   return (
-    <div className="grid gap-4">
-      <div className={`relative h-44 w-44 ${base}`}>
-        {relation === 'em_cima' && <div className="absolute left-16 top-4 h-12 w-12 rounded-full bg-amber-400" />}
-        {relation === 'embaixo' && <div className="absolute left-16 bottom-4 h-12 w-12 rounded-full bg-amber-400" />}
-        {relation === 'dentro' && <div className="absolute left-16 top-16 h-12 w-12 rounded-full bg-amber-400" />}
-        {relation === 'ao_lado' && <div className="absolute right-4 top-16 h-12 w-12 rounded-full bg-amber-400" />}
-        {relation === 'frente' && <div className="absolute left-8 top-10 h-12 w-12 rounded-full bg-amber-400" />}
-        {relation === 'atras' && <div className="absolute right-8 bottom-10 h-12 w-12 rounded-full bg-amber-400" />}
-        <div className="absolute inset-8 rounded-xl border border-neutral-300 bg-neutral-100" />
+    <div className="flex flex-col items-center gap-3">
+      <div className={`relative h-44 w-56 ${base}`}>
+        <div className="absolute inset-x-6 bottom-6 h-3 rounded-full bg-neutral-200" />
+        {relation === 'em_cima' && (
+          <>
+            <div className="absolute left-20 top-4">{cat}</div>
+            <div className="absolute left-20 bottom-8">{vase}</div>
+          </>
+        )}
+        {relation === 'embaixo' && (
+          <>
+            <div className="absolute left-20 top-4">{vase}</div>
+            <div className="absolute left-20 bottom-2">{cat}</div>
+          </>
+        )}
+        {relation === 'dentro' && (
+          <>
+            <div className="absolute left-20 top-6">{vase}</div>
+            <div className="absolute left-24 top-14">{cat}</div>
+          </>
+        )}
+        {relation === 'ao_lado' && (
+          <>
+            <div className="absolute left-10 top-10">{cat}</div>
+            <div className="absolute right-10 top-10">{vase}</div>
+          </>
+        )}
+        {relation === 'frente' && (
+          <>
+            <div className="absolute left-12 top-8 z-20">{cat}</div>
+            <div className="absolute right-12 top-12 z-10 opacity-80">{vase}</div>
+          </>
+        )}
+        {relation === 'atras' && (
+          <>
+            <div className="absolute left-12 top-12 z-10 opacity-80">{cat}</div>
+            <div className="absolute right-12 top-8 z-20">{vase}</div>
+          </>
+        )}
+      </div>
+      <div className="flex items-center gap-6 text-[11px] text-muted-foreground">
+        <span>Gato</span>
+        <span>Vaso</span>
       </div>
     </div>
   );
@@ -367,6 +422,49 @@ function AnalysisBoard({ missing }: { missing: 'triangulo' | 'circulo' | 'quadra
         <div className={`h-12 w-12 ${missing === 'circulo' ? 'rounded-full bg-amber-400' : 'rounded-full bg-neutral-200'}`} />
         <div className={`${missing === 'triangulo' ? 'border-b-amber-400' : 'border-b-neutral-200'} h-0 w-0 border-l-[24px] border-r-[24px] border-b-[42px] border-l-transparent border-r-transparent`} />
       </div>
+    </div>
+  );
+}
+
+function TreeIllustration() {
+  return (
+    <div className="mx-auto flex h-20 w-20 flex-col items-center justify-end">
+      <div className="h-12 w-12 rounded-full bg-emerald-400/80 shadow-sm" />
+      <div className="h-6 w-4 rounded-sm bg-amber-700" />
+    </div>
+  );
+}
+
+function CarIllustration() {
+  return (
+    <div className="mx-auto flex h-20 w-20 flex-col items-center justify-end">
+      <div className="h-8 w-14 rounded-xl bg-sky-400 shadow-sm" />
+      <div className="-mt-2 flex w-16 items-center justify-between">
+        <div className="h-3 w-3 rounded-full bg-neutral-700" />
+        <div className="h-3 w-3 rounded-full bg-neutral-700" />
+      </div>
+    </div>
+  );
+}
+
+function CatIllustration() {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative h-10 w-12 rounded-xl bg-amber-300 shadow-sm">
+        <div className="absolute -top-2 left-1 h-4 w-4 rotate-45 rounded-sm bg-amber-300" />
+        <div className="absolute -top-2 right-1 h-4 w-4 rotate-45 rounded-sm bg-amber-300" />
+        <div className="absolute left-3 top-4 h-1.5 w-1.5 rounded-full bg-neutral-700" />
+        <div className="absolute right-3 top-4 h-1.5 w-1.5 rounded-full bg-neutral-700" />
+      </div>
+    </div>
+  );
+}
+
+function VaseIllustration() {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="h-3 w-6 rounded-t-lg bg-rose-300" />
+      <div className="h-10 w-8 rounded-b-2xl bg-rose-400 shadow-sm" />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import {
   PORTAGE_AREAS, getPortageData, savePortageData, calculatePortageResults,
   type PortageData, type PortageAnswer,
 } from '@/lib/testsData';
-import { calculateAge, getPatient } from '@/lib/data';
+import { calculateAge, getPatient, type Patient } from '@/lib/data';
 
 const ANSWER_OPTIONS: { value: PortageAnswer; label: string; color: string }[] = [
   { value: 1, label: 'SIM', color: 'bg-success/15 text-success border-success/30' },
@@ -20,12 +20,19 @@ const ANSWER_OPTIONS: { value: PortageAnswer; label: string; color: string }[] =
 const AGE_RANGES = ['0-1', '1-2', '2-3', '3-4', '4-5', '5-6'];
 
 export default function PortageTest({ patientId }: { patientId: string }) {
-  const [data, setData] = useState<PortageData>(() => getPortageData(patientId));
+  const [data, setData] = useState<PortageData>({ answers: {} });
   const [showChart, setShowChart] = useState(false);
+  const [patient, setPatient] = useState<Patient | null>(null);
 
-  useEffect(() => { setData(getPortageData(patientId)); }, [patientId]);
+  useEffect(() => {
+    const load = async () => {
+      setData(await getPortageData(patientId));
+      const p = await getPatient(patientId);
+      setPatient(p || null);
+    };
+    load();
+  }, [patientId]);
 
-  const patient = getPatient(patientId);
   const realAgeMonths = patient ? calculateAge(patient.birthDate) * 12 : 0;
 
   const results = useMemo(() => calculatePortageResults(data), [data]);
@@ -46,12 +53,15 @@ export default function PortageTest({ patientId }: { patientId: string }) {
     }));
   }
 
-  function handleSave() {
-    savePortageData(patientId, { ...data, completedAt: new Date().toISOString() });
+  async function handleSave() {
+    await savePortageData(patientId, { ...data, completedAt: new Date().toISOString() });
     toast.success('Escala Portage salva com sucesso!');
   }
 
   const answeredCount = Object.keys(data.answers).filter(k => data.answers[k] !== undefined).length;
+  useEffect(() => {
+    if (answeredCount > 0) setShowChart(true);
+  }, [answeredCount]);
   const totalItems = PORTAGE_AREAS.reduce((acc, a) => acc + Object.values(a.items).flat().length, 0);
 
   return (

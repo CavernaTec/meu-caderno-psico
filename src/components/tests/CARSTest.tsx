@@ -14,9 +14,14 @@ const SCORE_OPTIONS = [
 ];
 
 export default function CARSTest({ patientId }: { patientId: string }) {
-  const [data, setData] = useState<CARSData>(() => getCARSData(patientId));
+  const [data, setData] = useState<CARSData>({ scores: {} });
 
-  useEffect(() => { setData(getCARSData(patientId)); }, [patientId]);
+  useEffect(() => {
+    const load = async () => {
+      setData(await getCARSData(patientId));
+    };
+    load();
+  }, [patientId]);
 
   const result = useMemo(() => calculateCARSResult(data), [data]);
 
@@ -24,8 +29,8 @@ export default function CARSTest({ patientId }: { patientId: string }) {
     setData(prev => ({ ...prev, scores: { ...prev.scores, [itemId]: score } }));
   }
 
-  function handleSave() {
-    saveCARSData(patientId, data);
+  async function handleSave() {
+    await saveCARSData(patientId, data);
     toast.success('CARS salva com sucesso!');
   }
 

@@ -12,10 +12,11 @@ function formatLongDate(date: Date): string {
   return formatted.replace(/^\w/, c => c.toUpperCase()).replace(/-feira/, '-Feira').replace(/de (\w)/, (_, c) => `De ${c.toUpperCase()}`);
 }
 
-function countRecentSessions(days = 7): number {
+async function countRecentSessions(days = 7): Promise<number> {
   const limit = new Date();
   limit.setDate(limit.getDate() - days);
-  return getSessions().filter(session => new Date(session.date) >= limit).length;
+  const sessions = await getSessions();
+  return sessions.filter(session => new Date(session.date) >= limit).length;
 }
 
 export default function HomePage() {
@@ -23,12 +24,16 @@ export default function HomePage() {
   const [recentSessionsCount, setRecentSessionsCount] = useState(0);
 
   useEffect(() => {
-    setPatientsCount(getPatients().length);
-    setRecentSessionsCount(countRecentSessions(7));
+    const load = async () => {
+      const patients = await getPatients();
+      setPatientsCount(patients.length);
+      setRecentSessionsCount(await countRecentSessions(7));
+    };
+    load();
   }, []);
 
   return (
-    <div className="container max-w-2xl py-8 px-4 md:px-0">
+    <div className="px-4 pb-6">
       <div className="animate-fade-in">
         <p className="text-sm text-primary font-medium">{formatLongDate(new Date())}</p>
         <h1 className="text-3xl font-bold text-foreground mt-1">Psicopedagogia</h1>
@@ -37,20 +42,20 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-6">
-        <div className="bg-card border rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-            <Users size={18} />
-            Pacientes
+        <div className="grid grid-cols-2 gap-4 mt-6">
+          <div className="bg-card border rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+              <Users size={18} />
+              Pacientes
+            </div>
+            <p className="text-3xl font-bold text-primary mt-2">{patientsCount}</p>
+            <p className="text-sm text-muted-foreground">cadastrados</p>
           </div>
-          <p className="text-3xl font-bold text-primary mt-2">{patientsCount}</p>
-          <p className="text-sm text-muted-foreground">cadastrados</p>
-        </div>
-        <div className="bg-card border rounded-2xl p-4">
-          <div className="flex items-center gap-2 text-success font-semibold text-sm">
-            <CalendarDays size={18} />
-            Sessões
-          </div>
+          <div className="bg-card border rounded-2xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-success font-semibold text-sm">
+              <CalendarDays size={18} />
+              Sessões
+            </div>
           <p className="text-3xl font-bold text-foreground mt-2">{recentSessionsCount}</p>
           <p className="text-sm text-muted-foreground">recentes</p>
         </div>

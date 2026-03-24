@@ -21,6 +21,7 @@ export type IARVisualConfig =
   | { type: 'posicao'; relation: 'em_cima' | 'embaixo' | 'dentro' | 'ao_lado' | 'frente' | 'atras' }
   | { type: 'visual'; task: 'igual' | 'diferente' | 'maior' | 'menor' | 'forma' }
   | { type: 'auditiva'; pair: string; rhyme?: string }
+  | { type: 'auditiva-list'; words: string[]; note?: string }
   | { type: 'analise'; missing: 'triangulo' | 'circulo' | 'quadrado' };
 
 export interface IARProtocolItem {
@@ -130,14 +131,14 @@ export const IAR_PROTOCOL_STEPS: IARProtocolItem[] = [
     id: 'lateralidade_esquerda',
     area: 'lateralidade',
     title: 'Lateralidade — Esquerda',
-    instruction: 'Aponte para a casa que está à esquerda.',
+    instruction: 'Aponte para o carro que está à esquerda.',
     visual: { type: 'lateralidade', target: 'esquerda' },
   },
   {
     id: 'lateralidade_cor',
     area: 'lateralidade',
     title: 'Lateralidade — Referência',
-    instruction: 'Qual objeto está à direita do sol?',
+    instruction: 'Qual carro está à direita da árvore?',
     visual: { type: 'lateralidade', target: 'direita' },
   },
   {
@@ -218,25 +219,18 @@ export const IAR_PROTOCOL_STEPS: IARProtocolItem[] = [
     visual: { type: 'visual', task: 'forma' },
   },
   {
-    id: 'auditiva_faca_vaca',
+    id: 'auditiva_repeticao',
     area: 'discriminacaoAuditiva',
-    title: 'Discriminação Auditiva — Palavra',
-    instruction: 'Repita: “faca” e “vaca”.',
-    visual: { type: 'auditiva', pair: 'Faca / Vaca' },
+    title: 'Discriminação Auditiva — Repetição',
+    instruction: 'Repita as palavras em voz alta.',
+    visual: { type: 'auditiva-list', words: ['casa', 'gato', 'faca', 'vaca'], note: 'Repita uma por vez.' },
   },
   {
-    id: 'auditiva_pao_bom',
+    id: 'auditiva_rimas',
     area: 'discriminacaoAuditiva',
-    title: 'Discriminação Auditiva — Palavra',
-    instruction: 'Repita: “pão” e “bom”.',
-    visual: { type: 'auditiva', pair: 'Pão / Bom' },
-  },
-  {
-    id: 'auditiva_rima',
-    area: 'discriminacaoAuditiva',
-    title: 'Discriminação Auditiva — Rima',
+    title: 'Discriminação Auditiva — Rimas',
     instruction: 'Qual palavra rima com “gato”?',
-    visual: { type: 'auditiva', pair: 'Gato / Rato', rhyme: 'Rima' },
+    visual: { type: 'auditiva-list', words: ['Gato', 'Rato', 'Pato'], note: 'Peça para identificar a rima.' },
   },
   {
     id: 'analise_sintese_1',

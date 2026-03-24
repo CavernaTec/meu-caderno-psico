@@ -13,56 +13,58 @@ export default function EvolutionTab({ patientId }: { patientId: string }) {
   const [abcForm, setAbcForm] = useState({ antecedent: '', behavior: '', consequence: '' });
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function reloadSessions() {
+  async function reloadSessions() {
+    const list = await getSessions();
     setSessions(
-      getSessions()
+      list
         .filter(s => s.patientId === patientId)
         .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))
     );
   }
 
-  function reloadAbc() {
-    setAbcRecords(getABCRecords(patientId).sort((a, b) => b.date.localeCompare(a.date)));
+  async function reloadAbc() {
+    const records = await getABCRecords(patientId);
+    setAbcRecords(records.sort((a, b) => b.date.localeCompare(a.date)));
   }
 
   useEffect(() => { reloadSessions(); reloadAbc(); }, [patientId]);
 
-  function handleAddSession() {
+  async function handleAddSession() {
     if (!notes.trim()) {
       toast.error('Preencha a descrição da sessão.');
       return;
     }
-    saveSession({ patientId, date, time: '', notes, completed: false });
-    reloadSessions();
+    await saveSession({ patientId, date, time: '', notes, completed: false });
+    await reloadSessions();
     setDate(new Date().toISOString().split('T')[0]);
     setNotes('');
     setShowSessionForm(false);
     toast.success('Sessão salva!');
   }
 
-  function handleDeleteSession(id: string) {
+  async function handleDeleteSession(id: string) {
     if (!confirm('Remover esta sessão?')) return;
-    deleteSession(id);
-    reloadSessions();
+    await deleteSession(id);
+    await reloadSessions();
     toast.success('Sessão removida.');
   }
 
-  function handleSaveAbc() {
+  async function handleSaveAbc() {
     if (!abcForm.antecedent || !abcForm.behavior || !abcForm.consequence) {
       toast.error('Preencha todos os campos.');
       return;
     }
-    saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...abcForm });
-    reloadAbc();
+    await saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...abcForm });
+    await reloadAbc();
     setAbcForm({ antecedent: '', behavior: '', consequence: '' });
     setShowAbcForm(false);
     toast.success('Registro ABC salvo!');
   }
 
-  function handleDeleteAbc(id: string) {
+  async function handleDeleteAbc(id: string) {
     if (!confirm('Remover este registro?')) return;
-    deleteABCRecord(id);
-    reloadAbc();
+    await deleteABCRecord(id);
+    await reloadAbc();
     toast.success('Registro removido.');
   }
 
@@ -75,7 +77,7 @@ export default function EvolutionTab({ patientId }: { patientId: string }) {
         <div className="flex items-center justify-between mb-3">
           <div>
             <h2 className="text-lg font-bold text-foreground">Linha do Tempo de Sessões</h2>
-            <p className="text-sm text-muted-foreground">{sessions.length} sessãoes registradas</p>
+            <p className="text-sm text-muted-foreground">{sessions.length} sessões registradas</p>
           </div>
           <button
             onClick={() => setShowSessionForm(!showSessionForm)}
