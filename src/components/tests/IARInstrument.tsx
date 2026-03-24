@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, CircleSlash, HelpCircle, Volume2 } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
@@ -39,10 +39,19 @@ function getStatusTone(status: string) {
 
 export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showSummary, setShowSummary] = useState(false);
   const step = IAR_PROTOCOL_STEPS[currentIndex];
   const responses = data.responses || {};
   const selected = responses[step.id];
   const profile = useMemo(() => computeIARProfile(responses), [responses]);
+  const totalSteps = IAR_PROTOCOL_STEPS.length;
+  const isLastStep = currentIndex === totalSteps - 1;
+
+  useEffect(() => {
+    if (profile.answered === totalSteps) {
+      setShowSummary(true);
+    }
+  }, [profile.answered, totalSteps]);
 
   function setScore(score: IARProtocolScore) {
     const next = {
@@ -51,8 +60,10 @@ export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
       updatedAt: new Date().toISOString(),
     };
     onChange(next);
-    if (currentIndex < IAR_PROTOCOL_STEPS.length - 1) {
+    if (currentIndex < totalSteps - 1) {
       setCurrentIndex(currentIndex + 1);
+    } else {
+      setShowSummary(true);
     }
   }
 
@@ -61,10 +72,70 @@ export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
   }
 
   function goNext() {
-    setCurrentIndex((prev) => Math.min(IAR_PROTOCOL_STEPS.length - 1, prev + 1));
+    setCurrentIndex((prev) => Math.min(totalSteps - 1, prev + 1));
   }
 
-  const progress = Math.round(((currentIndex + 1) / IAR_PROTOCOL_STEPS.length) * 100);
+  const progress = Math.round(((currentIndex + 1) / totalSteps) * 100);
+
+  if (showSummary) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">Perfil de Prontidão para Alfabetização</p>
+              <h4 className="text-base font-semibold text-foreground">Resumo por área</h4>
+            </div>
+            <div className="text-xs text-muted-foreground">Respondidas: {profile.answered}/{totalSteps}</div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+            <div className="space-y-2">
+              {profile.areas.map((area) => (
+                <div key={area.area} className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{area.label}</p>
+                    <p className="text-xs text-muted-foreground">{area.percentage}%</p>
+                  </div>
+                  <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusTone(area.status)}`}>
+                    {area.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-border/50 bg-muted/20 p-2">
+              <ChartContainer
+                config={{
+                  score: {
+                    label: 'Pontuação',
+                    color: 'hsl(var(--primary))',
+                  },
+                }}
+                className="h-[260px]"
+              >
+                <RadarChart data={profile.areas.map((area) => ({ area: area.label, score: area.percentage }))}>
+                  <PolarGrid />
+                  <PolarAngleAxis dataKey="area" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+                  <Radar dataKey="score" stroke="var(--color-score)" fill="var(--color-score)" fillOpacity={0.25} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                </RadarChart>
+              </ChartContainer>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowSummary(false)}
+            className="rounded-xl border border-border/60 px-3 py-2 text-xs font-semibold text-muted-foreground transition-all"
+          >
+            Revisar itens
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -75,7 +146,7 @@ export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
             <h4 className="text-base font-semibold text-foreground">{step.title}</h4>
           </div>
           <div className="text-xs text-muted-foreground">
-            Etapa {currentIndex + 1} de {IAR_PROTOCOL_STEPS.length}
+            Etapa {currentIndex + 1} de {totalSteps}
           </div>
         </div>
         <div className="h-2 w-full rounded-full bg-muted">
@@ -131,61 +202,16 @@ export default function IARInstrument({ data, onChange }: IARInstrumentProps) {
             >
               <ArrowLeft size={14} /> Voltar
             </button>
-            <button
-              onClick={goNext}
-              disabled={currentIndex === IAR_PROTOCOL_STEPS.length - 1 || selected === undefined}
-              className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all disabled:opacity-50"
-            >
-              Avançar <ArrowRight size={14} />
-            </button>
+              <button
+                onClick={goNext}
+                disabled={isLastStep || selected === undefined}
+                className="flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground transition-all disabled:opacity-50"
+              >
+                Avançar <ArrowRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="rounded-2xl border border-border/60 bg-background p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">Perfil de Prontidão para Alfabetização</p>
-            <h4 className="text-base font-semibold text-foreground">Resumo por área</h4>
-          </div>
-          <div className="text-xs text-muted-foreground">Respondidas: {profile.answered}/{IAR_PROTOCOL_STEPS.length}</div>
-        </div>
-
-        <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_1.1fr]">
-          <div className="space-y-2">
-            {profile.areas.map((area) => (
-              <div key={area.area} className="flex items-center justify-between rounded-xl border border-border/50 px-3 py-2">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{area.label}</p>
-                  <p className="text-xs text-muted-foreground">{area.percentage}%</p>
-                </div>
-                <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${getStatusTone(area.status)}`}>
-                  {area.status}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl border border-border/50 bg-muted/20 p-2">
-            <ChartContainer
-              config={{
-                score: {
-                  label: 'Pontuação',
-                  color: 'hsl(var(--primary))',
-                },
-              }}
-              className="h-[260px]"
-            >
-              <RadarChart data={profile.areas.map(a => ({ area: a.label, score: a.percentage }))}>
-                <PolarGrid />
-                <PolarAngleAxis dataKey="area" tick={{ fontSize: 10 }} />
-                <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
-                <Radar dataKey="score" stroke="var(--color-score)" fill="var(--color-score)" fillOpacity={0.25} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-              </RadarChart>
-            </ChartContainer>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
