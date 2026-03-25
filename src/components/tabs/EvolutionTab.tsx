@@ -1,235 +1,195 @@
-import { useEffect, useState, useRef } from 'react';
-import { Plus, Calendar, Trash2, Camera, AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Plus, Trash2, Camera, X, BookOpen, Clock, AlertCircle } from 'lucide-react';
 import { getSessions, saveSession, deleteSession, formatDate, type Session, getABCRecords, saveABCRecord, deleteABCRecord, type ABCRecord } from '@/lib/data';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export default function EvolutionTab({ patientId }: { patientId: string }) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [abcRecords, setAbcRecords] = useState<ABCRecord[]>([]);
-  const [showSessionForm, setShowSessionForm] = useState(false);
-  const [showAbcForm, setShowAbcForm] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [type, setType] = useState<'session' | 'abc'>('session');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [abcForm, setAbcForm] = useState({ antecedent: '', behavior: '', consequence: '' });
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteType, setDeleteType] = useState<'session' | 'abc'>('session');
 
-  async function reloadSessions() {
+  async function reload() {
     const list = await getSessions();
-    setSessions(
-      list
-        .filter(s => s.patientId === patientId)
-        .sort((a, b) => `${b.date}${b.time}`.localeCompare(`${a.date}${a.time}`))
-    );
-  }
-
-  async function reloadAbc() {
+    setSessions(list.filter(s => s.patientId === patientId).sort((a, b) => b.date.localeCompare(a.date)));
     const records = await getABCRecords(patientId);
     setAbcRecords(records.sort((a, b) => b.date.localeCompare(a.date)));
   }
 
-  useEffect(() => { reloadSessions(); reloadAbc(); }, [patientId]);
+  useEffect(() => { reload(); }, [patientId]);
 
-  async function handleAddSession() {
-    if (!notes.trim()) {
-      toast.error('Preencha a descrição da sessão.');
-      return;
+  async function handleSave() {
+    if (type === 'session') {
+      if (!notes.trim()) { toast.error('Preencha a descrição.'); return; }
+      await saveSession({ patientId, date, time: '', notes, completed: false });
+    } else {
+      if (!abcForm.behavior.trim()) { toast.error('Preencha o comportamento.'); return; }
+      await saveABCRecord({ patientId, date, ...abcForm });
     }
-    await saveSession({ patientId, date, time: '', notes, completed: false });
-    await reloadSessions();
-    setDate(new Date().toISOString().split('T')[0]);
+    await reload();
     setNotes('');
-    setShowSessionForm(false);
-    toast.success('Sessão salva!');
-  }
-
-  async function handleDeleteSession(id: string) {
-    if (!confirm('Remover esta sessão?')) return;
-    await deleteSession(id);
-    await reloadSessions();
-    toast.success('Sessão removida.');
-  }
-
-  async function handleSaveAbc() {
-    if (!abcForm.antecedent || !abcForm.behavior || !abcForm.consequence) {
-      toast.error('Preencha todos os campos.');
-      return;
-    }
-    await saveABCRecord({ patientId, date: new Date().toISOString().split('T')[0], ...abcForm });
-    await reloadAbc();
     setAbcForm({ antecedent: '', behavior: '', consequence: '' });
-    setShowAbcForm(false);
-    toast.success('Registro ABC salvo!');
+    setIsAdding(false);
+    toast.success('Registro salvo!');
   }
 
-  async function handleDeleteAbc(id: string) {
-    if (!confirm('Remover este registro?')) return;
-    await deleteABCRecord(id);
-    await reloadAbc();
+  async function confirmDelete() {
+    if (!deleteId) return;
+    if (deleteType === 'session') await deleteSession(deleteId);
+    else await deleteABCRecord(deleteId);
+    setDeleteId(null);
+    await reload();
     toast.success('Registro removido.');
   }
 
-  const inputClass = "w-full px-3 py-2.5 bg-muted rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow";
+  // Merge sessions and ABCs into a timeline
+  const timeline = [
+    ...sessions.map(s => ({ id: s.id, date: s.date, type: 'session' as const, content: s.notes })),
+    ...abcRecords.map(r => ({ id: r.id, date: r.date, type: 'abc' as const, content: '', abc: r })),
+  ].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
-    <div className="space-y-6">
-      {/* Sessions Section */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Linha do Tempo de Sessões</h2>
-            <p className="text-sm text-muted-foreground">{sessions.length} sessões registradas</p>
-          </div>
-          <button
-            onClick={() => setShowSessionForm(!showSessionForm)}
-            className="flex items-center gap-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-90 active:scale-95 transition-all"
-          >
-            <Plus size={16} /> Sessão
-          </button>
-        </div>
-
-        {showSessionForm && (
-          <div className="bg-card border rounded-2xl p-5 space-y-4 mb-4">
-            <h3 className="font-bold text-foreground">Nova Sessão</h3>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Data</label>
-              <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputClass} />
+    <div className="space-y-6 pb-24">
+      {/* Delete Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 bg-foreground/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-card rounded-[2rem] p-8 max-w-sm w-full shadow-2xl border border-border">
+            <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 className="text-destructive" size={32} />
             </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Descrição da Sessão *</label>
-              <textarea
-                placeholder="Descreva as atividades, comportamentos e evolução observados..."
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={4}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-2">Fotos</label>
-              <button
-                onClick={() => fileRef.current?.click()}
-                className="flex items-center gap-2 border border-border px-4 py-2 rounded-xl text-sm text-foreground hover:bg-muted transition-colors"
-              >
-                <Camera size={16} /> Adicionar Foto
-              </button>
-              <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" />
-            </div>
+            <h3 className="text-xl font-bold text-foreground text-center mb-2">Excluir Registro</h3>
+            <p className="text-muted-foreground text-center mb-8">Esta ação não pode ser desfeita.</p>
             <div className="flex gap-3">
-              <button onClick={handleAddSession} className="flex-1 bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98]">
-                Salvar Sessão
-              </button>
-              <button onClick={() => setShowSessionForm(false)} className="px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted rounded-xl transition-colors">
-                Cancelar
-              </button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 py-3 font-bold text-muted-foreground bg-muted rounded-2xl">Cancelar</button>
+              <button onClick={confirmDelete} className="flex-1 py-3 font-bold text-destructive-foreground bg-destructive rounded-2xl shadow-lg">Excluir</button>
             </div>
           </div>
-        )}
-
-        {sessions.length === 0 && !showSessionForm && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">Nenhuma sessão registrada ainda</p>
-          </div>
-        )}
-
-        {sessions.map(session => (
-          <div key={session.id} className="bg-card border rounded-2xl p-4 mb-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-semibold text-muted-foreground">{formatDate(session.date)}</p>
-                {session.notes && <p className="text-sm text-foreground mt-1 leading-relaxed">{session.notes}</p>}
-              </div>
-              <button onClick={() => handleDeleteSession(session.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ABC Section */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Registro ABC</h2>
-            <p className="text-sm text-muted-foreground">Antecedente · Comportamento · Consequência</p>
-          </div>
-          <button
-            onClick={() => setShowAbcForm(!showAbcForm)}
-            className="flex items-center gap-1.5 border border-border px-4 py-2 rounded-xl text-sm font-semibold text-foreground hover:bg-muted transition-colors active:scale-95"
-          >
-            <Plus size={16} /> ABC
-          </button>
         </div>
+      )}
 
-        {showAbcForm && (
-          <div className="bg-card border rounded-2xl p-5 space-y-4 mb-4">
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Antecedente (A)</label>
-              <textarea
-                placeholder="O que aconteceu antes?"
-                value={abcForm.antecedent}
-                onChange={e => setAbcForm(f => ({ ...f, antecedent: e.target.value }))}
-                rows={2}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Comportamento (B)</label>
-              <textarea
-                placeholder="Qual foi o comportamento?"
-                value={abcForm.behavior}
-                onChange={e => setAbcForm(f => ({ ...f, behavior: e.target.value }))}
-                rows={2}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">Consequência (C)</label>
-              <textarea
-                placeholder="O que foi feito em resposta?"
-                value={abcForm.consequence}
-                onChange={e => setAbcForm(f => ({ ...f, consequence: e.target.value }))}
-                rows={2}
-                className={`${inputClass} resize-none`}
-              />
-            </div>
-            <button onClick={handleSaveAbc} className="w-full bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98]">
+      {isAdding ? (
+        <div className="space-y-4">
+          {/* Type selector */}
+          <div className="flex bg-card p-1 rounded-2xl border border-border shadow-sm">
+            <button 
+              onClick={() => setType('session')}
+              className={cn(
+                "flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2",
+                type === 'session' ? "bg-brand-600 text-primary-foreground shadow-md" : "text-muted-foreground"
+              )}
+            >
+              <BookOpen size={18} /> Sessão
+            </button>
+            <button 
+              onClick={() => setType('abc')}
+              className={cn(
+                "flex-1 py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2",
+                type === 'abc' ? "bg-destructive text-destructive-foreground shadow-md" : "text-muted-foreground"
+              )}
+            >
+              <AlertCircle size={18} /> Registro ABC
+            </button>
+          </div>
+
+          <div className="glass-card p-6 rounded-3xl space-y-4 border border-border">
+            {type === 'abc' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Antecedente</label>
+                  <textarea className="w-full bg-muted border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-destructive outline-none min-h-[80px]" value={abcForm.antecedent} onChange={e => setAbcForm({...abcForm, antecedent: e.target.value})} placeholder="O que aconteceu antes?" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Comportamento</label>
+                  <textarea className="w-full bg-muted border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-destructive outline-none min-h-[80px]" value={abcForm.behavior} onChange={e => setAbcForm({...abcForm, behavior: e.target.value})} placeholder="O que a criança fez?" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Consequência</label>
+                  <textarea className="w-full bg-muted border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-destructive outline-none min-h-[80px]" value={abcForm.consequence} onChange={e => setAbcForm({...abcForm, consequence: e.target.value})} placeholder="O que ocorreu depois?" />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Relato da Sessão</label>
+                <textarea className="w-full bg-muted border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-brand-500 outline-none min-h-[200px]" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Descreva a sessão, avanços e dificuldades..." />
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3">
+            <button onClick={() => setIsAdding(false)} className="flex-1 bg-card text-muted-foreground font-bold py-4 rounded-2xl border border-border">Cancelar</button>
+            <button onClick={handleSave} className={cn("flex-[2] text-primary-foreground font-bold py-4 rounded-2xl shadow-lg", type === 'abc' ? "bg-destructive" : "bg-brand-600")}>
               Salvar Registro
             </button>
           </div>
-        )}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setIsAdding(true)} 
+            className="w-full bg-card border-2 border-dashed border-border text-muted-foreground font-bold py-6 rounded-3xl flex flex-col items-center gap-2 hover:border-brand-500 hover:text-brand-600 hover:bg-accent/30 transition-all"
+          >
+            <Plus size={32} />
+            <span>Novo Registro de Evolução</span>
+          </button>
 
-        {abcRecords.length === 0 && !showAbcForm && (
-          <div className="text-center py-6 text-muted-foreground">
-            <p className="text-sm">Nenhum registro ABC encontrado.</p>
-          </div>
-        )}
+          {/* Timeline */}
+          <div className="space-y-4 relative before:absolute before:left-6 before:top-0 before:bottom-0 before:w-0.5 before:bg-border">
+            {timeline.map((ev) => (
+              <div key={`${ev.type}-${ev.id}`} className="relative pl-12">
+                <div className={cn(
+                  "absolute left-4 top-4 w-4 h-4 rounded-full border-2 border-card z-10",
+                  ev.type === 'abc' ? "bg-destructive" : "bg-brand-600"
+                )} />
 
-        {abcRecords.map(record => (
-          <div key={record.id} className="bg-card border rounded-2xl p-4 mb-2">
-            <div className="flex items-start justify-between mb-2">
-              <p className="text-sm font-semibold text-muted-foreground">{formatDate(record.date)}</p>
-              <button onClick={() => handleDeleteAbc(record.id)} className="text-muted-foreground hover:text-destructive transition-colors active:scale-90 p-1">
-                <Trash2 size={14} />
-              </button>
-            </div>
-            <div className="space-y-1.5">
-              <div>
-                <span className="text-xs font-bold text-primary">A</span>
-                <p className="text-sm text-foreground">{record.antecedent}</p>
+                <div className="bg-card p-5 rounded-2xl border border-border shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {ev.type === 'abc' ? <AlertCircle size={14} className="text-destructive" /> : <BookOpen size={14} className="text-brand-600" />}
+                      <span className={cn("text-[10px] font-bold uppercase tracking-wider", ev.type === 'abc' ? "text-destructive" : "text-brand-600")}>
+                        {ev.type === 'abc' ? 'Registro ABC' : 'Sessão'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground font-bold">{formatDate(ev.date)}</span>
+                      <button 
+                        onClick={() => { setDeleteId(ev.id); setDeleteType(ev.type); }} 
+                        className="p-1 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {ev.type === 'session' && (
+                    <p className="text-sm text-foreground leading-relaxed">{ev.content}</p>
+                  )}
+
+                  {ev.type === 'abc' && ev.abc && (
+                    <div className="space-y-2 mt-2">
+                      <div><span className="text-[10px] font-bold text-amber-600 uppercase">Antecedente:</span> <span className="text-sm text-foreground">{ev.abc.antecedent}</span></div>
+                      <div><span className="text-[10px] font-bold text-destructive uppercase">Comportamento:</span> <span className="text-sm text-foreground">{ev.abc.behavior}</span></div>
+                      <div><span className="text-[10px] font-bold text-success uppercase">Consequência:</span> <span className="text-sm text-foreground">{ev.abc.consequence}</span></div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div>
-                <span className="text-xs font-bold text-destructive">B</span>
-                <p className="text-sm text-foreground">{record.behavior}</p>
+            ))}
+
+            {timeline.length === 0 && (
+              <div className="text-center py-12">
+                <Clock size={40} className="mx-auto text-muted-foreground/30 mb-4" />
+                <p className="text-muted-foreground font-medium">Nenhum registro de evolução ainda.</p>
               </div>
-              <div>
-                <span className="text-xs font-bold text-success">C</span>
-                <p className="text-sm text-foreground">{record.consequence}</p>
-              </div>
-            </div>
+            )}
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
