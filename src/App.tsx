@@ -8,6 +8,7 @@ import PatientsPage from "@/pages/PatientsPage";
 import NewPatientPage from "@/pages/NewPatientPage";
 import PatientDetailPage from "@/pages/PatientDetailPage";
 import ReportsPage from "@/pages/ReportsPage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,7 +16,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Sonner position="top-center" />
+      <Sonner position="top-center" richColors />
       <BrowserRouter>
         <AppLayout>
           <Routes>
@@ -24,6 +25,7 @@ const App = () => (
             <Route path="/pacientes/novo" element={<NewPatientPage />} />
             <Route path="/pacientes/:id" element={<PatientDetailPage />} />
             <Route path="/relatorios" element={<ReportsPage />} />
+            <Route path="/ajustes" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AppLayout>

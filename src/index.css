@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
 
 #lovable-badge {
   display: none !important;
@@ -11,47 +11,53 @@
 
 @layer base {
   :root {
-    --background: 160 20% 96%;
-    --foreground: 210 16% 18%;
+    --background: 210 20% 96%;
+    --foreground: 215 28% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 18 18% 22%;
+    --card-foreground: 215 28% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 22%;
+    --popover-foreground: 215 28% 10%;
 
-    --primary: 150 24% 42%;
+    --primary: 199 89% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 160 16% 92%;
-    --secondary-foreground: 210 16% 22%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 215 16% 36%;
 
-    --muted: 160 12% 92%;
-    --muted-foreground: 210 12% 46%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 46%;
 
-    --accent: 200 65% 80%;
-    --accent-foreground: 210 30% 24%;
+    --accent: 199 89% 96%;
+    --accent-foreground: 199 89% 32%;
 
-    --success: 150 30% 45%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
 
-    --destructive: 15 60% 55%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 18% 88%;
-    --input: 200 18% 88%;
-    --ring: 200 60% 58%;
+    --border: 210 18% 92%;
+    --input: 210 18% 92%;
+    --ring: 199 89% 48%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 16% 36%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 199 89% 96%;
+    --sidebar-accent-foreground: 199 89% 32%;
+    --sidebar-border: 210 18% 95%;
+    --sidebar-ring: 199 89% 48%;
+
+    --brand-50: 199 89% 97%;
+    --brand-100: 199 89% 93%;
+    --brand-500: 199 89% 48%;
+    --brand-600: 200 98% 39%;
+    --brand-700: 201 96% 32%;
   }
 }
 
@@ -60,45 +66,53 @@
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    position: relative;
+    max-width: 100%;
+    height: 100dvh;
+    width: 100%;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Nunito', sans-serif;
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.025em;
+  }
+
+  input, button, select, textarea {
+    min-height: 44px;
   }
 }
 
-.app-shell {
-  width: 100%;
-  max-width: 450px;
-  min-height: 100vh;
-  margin: 0 auto;
-  background: hsl(var(--background));
-}
-
-@media (min-width: 768px) {
-  .app-shell {
-    border-radius: 28px;
-    box-shadow: 0 18px 60px rgba(25, 50, 40, 0.12);
-    border: 1px solid rgba(120, 140, 135, 0.2);
-    overflow: hidden;
+@layer components {
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md shadow-sm;
+    border: 1px solid rgba(255,255,255,0.2);
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-xl 
+           hover:opacity-90 active:scale-95 transition-all shadow-sm;
   }
 }
 
 @layer utilities {
-  .scroll-reveal {
-    animation: scrollReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
-}
-
-@keyframes scrollReveal {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-    filter: blur(4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-    filter: blur(0);
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
@@ -115,5 +129,25 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  nav, header, button, .no-print, [role="navigation"], .print\:hidden {
+    display: none !important;
   }
 }
